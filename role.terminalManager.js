@@ -41,7 +41,7 @@ module.exports = {
             let foundGoodOrder = false;
             // if terminal trading is enabled
             if (terminalData.enabled) {
-                // if right hand is active so FROM terminal to storage
+                // if right hand active so transferring FROM terminal to storage
                 if (creep.memory.hand == 'right') {
                     // if full
                     if (creep.memory.working) {
@@ -89,7 +89,7 @@ module.exports = {
                         }
                     }
                 }
-                // else if left hand is active so TO terminal from storage
+                // else if left hand active so transferring from storage TO terminal
                 else if (creep.memory.hand == 'left') {
                     // if full
                     if (creep.memory.working) {
@@ -100,9 +100,10 @@ module.exports = {
                             // set the foundGoodOrder flag to true so we don't run collector code
                             foundGoodOrder = true;
                             // if the order is enabled, order resource or dealData is defined and there is no storage or resource isn't energy or there are 20k energy in the storage
-                            if (order.enabled && ((order.dealData != undefined && terminal.store[order.dealData.resourceType] > 0 && (creep.room.storage == undefined || order.dealData.resourceType != RESOURCE_ENERGY || creep.room.storage.store[RESOURCE_ENERGY > 20000])) || (order.resource != undefined && terminal.store[order.resource] > 0 &&(creep.room.storage == undefined || order.resource != RESOURCE_ENERGY || creep.room.storage.store[RESOURCE_ENERGY > 20000])))) {
+                            if (order.enabled && ((order.dealData != undefined && creep.store[order.dealData.resourceType] > 0 && (creep.room.storage == undefined || order.dealData.resourceType != RESOURCE_ENERGY || creep.room.storage.store[RESOURCE_ENERGY > 20000])) || (order.resource != undefined && creep.store[order.resource] > 0 && (creep.room.storage == undefined || order.resource != RESOURCE_ENERGY || creep.room.storage.store[RESOURCE_ENERGY > 20000])))) {
                                 // get the order resource
                                 let resource = order.dealData == undefined ? order.resource: order.dealData.resourceType;
+
                                 // transfer the resource to terminal
                                 if (creep.transfer(terminal, resource) == ERR_NOT_IN_RANGE) {
                                     // move towards it
@@ -135,14 +136,13 @@ module.exports = {
                                     // break out of the loop
                                     break;
                                 }
-
                             }
                         }
                     }
                 }
                 else console.log('non-existent hand');
                 
-                if (!foundGoodOrder) roleCollector.run(creep)
+                if (!foundGoodOrder) roleCollector.run(creep);
             }
         }
     }
