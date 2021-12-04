@@ -175,10 +175,16 @@ StructureSpawn.prototype.spawnCreepsIfNecessary =
                             }
                             else continue;
                         }
+                        else if (role == 'builder') {
+                            // find all constracters sites
+                            let constracters_sites = this.room.find(FIND_MY_CONSTRUCTION_SITES);
+                            if (constracters_sites.length) {
+                                name = this.createCustomCreep(maxEnergy, 'builder');
+                            }
+                        }
                         else {
                             name = this.createCustomCreep(maxEnergy, role);
                         }
-                        NewCreepRole = role;
                         break;
                     }
                 }
@@ -210,16 +216,6 @@ StructureSpawn.prototype.spawnCreepsIfNecessary =
                         name = this.createLongDistanceCollector(maxEnergy, room.name, roomName);
                         NewCreepRole = 'LDC ' + roomName;
                     }
-                }
-            }
-            
-            // if none of the above caused a spawn command check for builders
-            if (name == undefined) {
-                // find all constracters sites
-                let constracters_sites = this.room.find(FIND_MY_CONSTRUCTION_SITES);
-                if (constracters_sites.length > 0 && numberOfCreeps['builder'] < 1) {
-                    name = this.createCustomCreep(maxEnergy, 'builder');
-                    numberOfCreeps['builder']++;
                 }
             }
         // }
@@ -266,19 +262,16 @@ StructureSpawn.prototype.createCustomCreep =
             // make sure the creep is not too big (more than 50 parts)
             numberOfParts = Math.min(numberOfParts, Math.floor(50 / 3));
             let body = [];
-            if (roleName != 'upgrader') { // ! REMOVE WHEN MOVED TO OTHER SHARD
-                for (let i = 0; i < numberOfParts; i++) {
-                    body.push(WORK);
-                }
-            } else body.push(WORK); // ! REMOVE WHEN MOVED TO OTHER SHARD
+            for (let i = 0; i < numberOfParts; i++) {
+                body.push(WORK);
+            }
             for (let i = 0; i < numberOfParts; i++) {
                 body.push(CARRY);
             }
-            if (roleName != 'upgrader') { // ! REMOVE WHEN MOVED TO OTHER SHARD
-                for (let i = 0; i < numberOfParts; i++) {
-                    body.push(MOVE);
-                }
-            } else body.push(MOVE); // ! REMOVE WHEN MOVED TO OTHER SHARD
+            for (let i = 0; i < numberOfParts; i++) {
+                body.push(MOVE);
+            }
+            if (energy == 300) body.push(MOVE)
             if (body.length > 50) {
                 body = []
                 for (let i = 0; i < 50; i++) {
