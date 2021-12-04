@@ -1,4 +1,5 @@
 // import modules
+require('prototype.flag');
 require('prototype.room');
 require('prototype.creep');
 require('prototype.tower');
@@ -53,6 +54,10 @@ module.exports.loop = function() {
             let room = Game.rooms[roomName]
             if (room.terminal && room.controller && room.controller.my) room.terminal.processTasks();
         }
+    }
+
+    for (let flagName in Game.flags) {
+        Game.flags[flagName].calcTask();
     }
     
 
