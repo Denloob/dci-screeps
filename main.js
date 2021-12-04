@@ -29,7 +29,7 @@ module.exports.loop = function() {
 
     // for each creeps
     for (let name in Game.creeps) {
-        if (Game.creeps[name].role != undefined)
+        if (Game.creeps[name].memory.role != undefined)
             // run creep logic
             Game.creeps[name].runRole();
     }
