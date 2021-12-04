@@ -125,7 +125,7 @@ StructureTerminal.prototype.processTasks =
                                     this.addTask('to', {enabled: true, dealData: dealData, order: false}, true);
                                 }
                                 //// let diedOrders = _.filter(terminalMemory.to, o => Game.market.getAllOrders({id: o.dealData.id}) == undefined);
-                                let diedOrders = _.filter(terminalMemory.to, o => o.dealData == undefined || o.dealData.active || Game.market.getOrderById(o.dealData.id) === null);
+                                let diedOrders = _.filter(terminalMemory.to, o => !o.order && (o.dealData == undefined || o.dealData.active || Game.market.getOrderById(o.dealData.id) === null));
                                 diedOrders.forEach(order => {
                                     let toMemory = Memory.rooms[this.room.name].terminal.to;
                                     toMemory.splice(toMemory.indexOf(order), 1);
