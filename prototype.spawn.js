@@ -268,10 +268,17 @@ StructureSpawn.prototype.createCustomCreep =
             for (let i = 0; i < numberOfParts; i++) {
                 body.push(CARRY);
             }
+            let numOfHeavyParts = body.length
             for (let i = 0; i < numberOfParts; i++) {
                 body.push(MOVE);
+                numOfHeavyParts--;
             }
-            if (energy == 300) body.push(MOVE)
+            energy -= numberOfParts*200;
+            while (energy > 50 && body.length < 50 && numOfHeavyParts > 0) {
+                body.push(MOVE);
+                energy -= 50;
+                numOfHeavyParts--;
+            }
             if (body.length > 50) {
                 body = []
                 for (let i = 0; i < 50; i++) {
