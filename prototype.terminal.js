@@ -115,16 +115,11 @@ StructureTerminal.prototype.processTasks =
                                 let dealData = this.getBestOffer(task.resource, task.minPrice, task.maxDistance);
                                 if (dealData) {
                                     let sameResourceDeal = _.filter(terminalMemory.to, o => !o.order && _.isEqual(o.dealData != undefined ? o.dealData.resourceType : undefined, dealData.resourceType));   
-                                    if (sameResourceDeal != undefined) {
-                                        // this should never happen
-                                        if (sameResourceDeal.length > 1) console.log('ERRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRROR GOT LIST line 66');
-                                        else {
-                                            terminalMemory.to.splice(terminalMemory.to.indexOf(sameResourceDeal), 1);
-                                        }
-                                    }
+                                    sameResourceDeal.forEach(deal => {
+                                        terminalMemory.to.splice(terminalMemory.to.indexOf(deal), 1);
+                                    });
                                     this.addTask('to', {enabled: true, dealData: dealData, order: false}, true);
                                 }
-                                //// let diedOrders = _.filter(terminalMemory.to, o => Game.market.getAllOrders({id: o.dealData.id}) == undefined);
                                 let diedOrders = _.filter(terminalMemory.to, o => !o.order && (o.dealData == undefined || !o.dealData.active || Game.market.getOrderById(o.dealData.id) === null));
                                 diedOrders.forEach(order => {
                                     let toMemory = Memory.rooms[this.room.name].terminal.to;
