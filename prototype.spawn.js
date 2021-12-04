@@ -6,12 +6,12 @@ StructureSpawn.prototype.spawnCreepsIfNecessary =
     function (CreepsDied) {
         /** @type {Room} */
         let room = this.room;
-        if (!_.isObject(this.memory)) this.memory = {minCreeps: {harvester: 2, collector: 0, upgrader: 1, builder: 0, repairer: 0, wallRepairer: 0, MH: 0, TM: 0}, minLongDistanceHarvesters: {}, minLongDistanceCollectors: {}, minDeffenders: {attacker: 2}};
+        if (!_.isObject(this.memory)) this.memory = {minCreeps: {harvester: 2, collector: 0, upgrader: 2, builder: 1, repairer: 0, wallRepairer: 0, MH: 1, TM: 1}, minLongDistanceHarvesters: {}, minLongDistanceCollectors: {}, minDeffenders: {attacker: 2}};
         else ["minCreeps","minLongDistanceHarvesters","minLongDistanceCollectors","minDeffenders"].forEach(key => {
             if (this.memory != undefined && !_.isObject(this.memory[key])) {
                 switch (key) {
                     case 'minCreeps':
-                        this.memory.minCreeps = {harvester: 2, collector: 0, upgrader: 1, builder: 0, repairer: 0, wallRepairer: 0, MH: 0, TM: 0};
+                        this.memory.minCreeps = {harvester: 2, collector: 0, upgrader: 2, builder: 1, repairer: 0, wallRepairer: 0, MH: 1, TM: 1};
                         break;
                     case 'minLongDistanceHarvesters':
                         this.memory.minLongDistanceHarvesters = {};
