@@ -45,7 +45,7 @@ module.exports.loop = function() {
     // for each spawn
     for (let spawnName in Game.spawns) {
         // run spawn logic
-        if (spawnName != 'Spawn1.1') Game.spawns[spawnName].spawnCreepsIfNecessary(CreepsDied);
+        Game.spawns[spawnName].spawnCreepsIfNecessary(CreepsDied);
     }
     for (let roomName in Game.rooms) {
         roomLogic(roomName);
@@ -55,22 +55,21 @@ module.exports.loop = function() {
         }
     }
     
-    Memory.spawns['Spawn1.1'] = Memory.spawns.Spawn1
 
     // console.log(Game.rooms.E9N23.terminal.sendEnergy('E8N23', 100000));
     // Game.creeps['LDH E7N23_27'].moveTo(40, 7)
-    var creepName = 'clai';
-    var roomName = Game.creeps[creepName] != undefined ? Game.creeps[creepName].room: undefined;
-    if (roomName != undefined) {
-        var spawnName = Game.creeps[creepName].room.name == 'E8N23'? 'Spawn1': 'Spawn2'
-        // var spawnName = 'Spawn1';
-        var spawnCords = spawnName == 'Spawn1' ? [17, 27] : [25, 25];
-        creep_ = Game.creeps[creepName]
-        if (creep_ != undefined) {
-            creep_.moveTo(spawnCords[0], spawnCords[1], {visualizePathStyle: {stroke: '#000000'}})
-            Game.spawns[spawnName].recycleCreep(Game.creeps[creepName])
-        }
-    }
+    // var creepName = 'clai';
+    // var roomName = Game.creeps[creepName] != undefined ? Game.creeps[creepName].room: undefined;
+    // if (roomName != undefined) {
+    //     var spawnName = Game.creeps[creepName].room.name == 'E8N23'? 'Spawn1': 'Spawn2'
+    //     // var spawnName = 'Spawn1';
+    //     var spawnCords = spawnName == 'Spawn1' ? [17, 27] : [25, 25];
+    //     creep_ = Game.creeps[creepName]
+    //     if (creep_ != undefined) {
+    //         creep_.moveTo(spawnCords[0], spawnCords[1], {visualizePathStyle: {stroke: '#000000'}})
+    //         Game.spawns[spawnName].recycleCreep(Game.creeps[creepName])
+    //     }
+    // }
     // Game.creeps['Healer Dismantler E7N24_13_41'].move(TOP)
     // Game.creeps['Dismantler Dismantler E7N24_13_32'].move(TOP)
     // Game.creeps['Dismantler Dismantler E7N24_13_10'].move(TOP)
