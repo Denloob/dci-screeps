@@ -59,7 +59,7 @@ Room.prototype.displayData =
         let listOfNotLimitedRoles = []
         let listOfLimitedRoles = []
         listOfRoles.forEach(role => {
-            if (role == 'MH' || role == 'MM' || role == 'TM' || role == 'mineralHarvester') {
+            if (role == 'MH' || role == 'MM' || role == 'TM' || role == 'builder') {
                 role = `@@${role}`
             }
             if (role.startsWith('$$')) { listOfLimitedRoles.push(role.replace('$$', '')); return; }
@@ -144,16 +144,20 @@ Room.prototype.displayData =
                         let roomExtractor = this.find(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_EXTRACTOR})[0];
                         let needMineralWorker = roomExtractor != undefined && roomMineral != undefined && roomMineral.mineralAmount > 0;
                         neededCreeps = needMineralWorker ? roomSpawnMemory.minCreeps[role]: 0;
-                        numOfCreeps = _.sum(creepsInRoom, (c) => c.memory.role == role);
                     }
                     else if (role == 'TM') {
                         if (roomMemory.terminal && _.isEqual(Object.keys(roomMemory.terminal), ['enabled', 'autoSell', 'from', 'to']) && roomMemory.terminal.enabled && (_.some(roomMemory.terminal.to, {enabled: true}) || _.some(roomMemory.terminal.from, {enabled: true}))) {
                             neededCreeps = roomSpawnMemory.minCreeps[role];
                         }
                         else neededCreeps = 0
-                        numOfCreeps = _.sum(creepsInRoom, (c) => c.memory.role == role);
-
                     }
+                    else if (role == 'builder') {
+                        if (this.find(FIND_MY_CONSTRUCTION_SITES).length) {
+                            neededCreeps = roomSpawnMemory.minCreeps[role];
+                        }
+                        else neededCreeps = 0
+                    }
+                    numOfCreeps = _.sum(creepsInRoom, (c) => c.memory.role == role);
                 }
                 else {
                     console.log('ERROR: Role type undefined');
