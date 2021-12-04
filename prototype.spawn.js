@@ -6,6 +6,25 @@ StructureSpawn.prototype.spawnCreepsIfNecessary =
     function (CreepsDied) {
         /** @type {Room} */
         let room = this.room;
+        if (!_.isObject(this.memory)) this.memory = {minCreeps: {harvester: 2, collector: 0, upgrader: 1, builder: 0, repairer: 0, wallRepairer: 0, MH: 0, TM: 0}, minLongDistanceHarvesters: {}, minLongDistanceCollectors: {}, minDeffenders: {attacker: 2}};
+        else ["minCreeps","minLongDistanceHarvesters","minLongDistanceCollectors","minDeffenders"].forEach(key => {
+            if (this.memory != undefined && !_.isObject(this.memory[key])) {
+                switch (key) {
+                    case 'minCreeps':
+                        this.memory.minCreeps = {harvester: 2, collector: 0, upgrader: 1, builder: 0, repairer: 0, wallRepairer: 0, MH: 0, TM: 0};
+                        break;
+                    case 'minLongDistanceHarvesters':
+                        this.memory.minLongDistanceHarvesters = {};
+                        break;
+                    case 'minLongDistanceCollectors':
+                        this.memory.minLongDistanceCollectors = {};
+                        break;
+                    case 'minDeffenders':
+                        this.memory.minDeffenders = {attacker: 2};
+                        break;
+                }
+            }
+        });
         // find all creeps in room
         /** @type {Array.<Creep>} */
         let creepsInRoom = room.find(FIND_MY_CREEPS);
