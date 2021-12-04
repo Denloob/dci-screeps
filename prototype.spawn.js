@@ -274,7 +274,7 @@ StructureSpawn.prototype.createCustomCreep =
                 numOfHeavyParts--;
             }
             energy -= numberOfParts*200;
-            while (energy > 50 && body.length < 50 && numOfHeavyParts > 0) {
+            while (energy >= 50 && body.length < 50 && numOfHeavyParts > 0) {
                 body.push(MOVE);
                 energy -= 50;
                 numOfHeavyParts--;
