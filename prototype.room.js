@@ -267,9 +267,9 @@ Room.prototype.displayData =
                         this.visual.text('TO: ', 41.2, endIndex, {color: 'DeepSkyBlue', font: 0.8, align: LEFT}); endIndex++;
                         terminalMemory.to.forEach(to => {
                             if (to.enabled) {
-                                this.visual.text(`${to.dealData.resourceType}:`, 41.8, endIndex, {color: '#DEDEDE', font: 0.8, align: LEFT}); endIndex++;
-                                let moreInfo = to.order ? `order: ${to.dealData.roomName} ${to.dealData.price}$`: `${to.dealData.roomName} ${to.dealData.price}$`
-                                this.visual.text(`${to.dealData.roomName} ${to.dealData.price}$`, 42.2, endIndex, {color: '#DEDEDE', font: 0.8, align: LEFT}); endIndex++;
+                                this.visual.text(`${to.dealData != undefined ? to.dealData.resourceType: to.resource}:`, 41.8, endIndex, {color: '#DEDEDE', font: 0.8, align: LEFT}); endIndex++;
+                                let moreInfo = to.order && to.resource != undefined ? `order: ${to.resource}`: `${to.dealData.roomName} ${to.dealData.price}$`
+                                this.visual.text(moreInfo, 42.2, endIndex, {color: '#DEDEDE', font: 0.8, align: LEFT}); endIndex++;
                             }
                         });
                     }
@@ -277,9 +277,9 @@ Room.prototype.displayData =
                         this.visual.text('FROM: ', 41.2, endIndex, {color: 'DeepPink', font: 0.8, align: LEFT}); endIndex++;
                         terminalMemory.from.forEach(from => {
                             if (from.enabled) {
-                                this.visual.text(`${from.dealData.resourceType}:`, 41.8, endIndex, {color: '#DEDEDE', font: 0.8, align: LEFT}); endIndex++;
-                                let moreInfo = from.order ? `order: ${from.dealData.roomName} ${from.dealData.price}$`: `${from.dealData.roomName} ${from.dealData.price}$`
-                                this.visual.text(`${from.dealData.roomName} ${from.dealData.price}$`, 42.2, endIndex, {color: '#DEDEDE', font: 0.8, align: LEFT}); endIndex++;
+                                this.visual.text(`${from.dealData != undefined ? from.dealData.resourceType: from.resource}}:`, 41.8, endIndex, {color: '#DEDEDE', font: 0.8, align: LEFT}); endIndex++;
+                                let moreInfo = from.order && from.resource != undefined ? `order: ${from.resource}`: `${from.dealData.roomName} ${from.dealData.price}$`
+                                this.visual.text(moreInfo, 42.2, endIndex, {color: '#DEDEDE', font: 0.8, align: LEFT}); endIndex++;
                             }
                         });
                     }  
