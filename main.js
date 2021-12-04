@@ -29,8 +29,9 @@ module.exports.loop = function() {
 
     // for each creeps
     for (let name in Game.creeps) {
-        // run creep logic
-        Game.creeps[name].runRole();
+        if (Game.creeps[name].role != undefined)
+            // run creep logic
+            Game.creeps[name].runRole();
     }
 
     // find all towers
