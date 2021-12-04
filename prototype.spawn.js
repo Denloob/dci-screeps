@@ -169,7 +169,7 @@ StructureSpawn.prototype.spawnCreepsIfNecessary =
                             if (Memory.rooms && Memory.rooms[this.room.name] && Memory.rooms[this.room.name].terminal && _.isEqual(Object.keys(Memory.rooms[this.room.name].terminal), ['enabled', 'autoSell', 'from', 'to'])) {
                                 let terminalMemory = Memory.rooms[this.room.name].terminal;
                                 if (terminalMemory.enabled && (_.some(terminalMemory.to, {enabled: true}) || _.some(terminalMemory.from, {enabled: true}))) {
-                                    name = this.createCustomCreep(maxEnergy, role);
+                                    name = this.createNotWorkerCreep(maxEnergy, role);
                                 }
                                 else continue;
                             }
