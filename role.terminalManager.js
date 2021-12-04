@@ -140,10 +140,9 @@ module.exports = {
                         }
                     }
                 }
-                else console.log('non-existent hand');
-                
-                if (!foundGoodOrder) roleCollector.run(creep);
+                else console.log('non-existent hand');    
             }
+            if (!foundGoodOrder) roleCollector.run(creep);
         }
     }
 };
