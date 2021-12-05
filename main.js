@@ -5,11 +5,13 @@ require('prototype.creep');
 require('prototype.tower');
 require('prototype.spawn');
 require('prototype.terminal');
+let excuseMe = require('creep.excuseMe');
 
 module.exports.loop = function() {
     if (Game.cpu.bucket == 10000) {
         Game.cpu.generatePixel();
     }
+    excuseMe.clearNudges();
     var CreepsDied = undefined;
     // check for memory entries of died creeps by iterating over Memory.creeps
     for (let name in Memory.creeps) {
@@ -30,6 +32,7 @@ module.exports.loop = function() {
 
     // for each creeps
     for (let name in Game.creeps) {
+        Game.creeps[name].giveWay()
         if (Game.creeps[name].memory.role != undefined)
             // run creep logic
             Game.creeps[name].runRole();
