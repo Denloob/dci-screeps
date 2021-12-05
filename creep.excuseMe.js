@@ -208,5 +208,6 @@ function clearNudges() {
 }
 
 module.exports = {
-	clearNudges: clearNudges
+	clearNudges: clearNudges,
+    getNudgeDirection_Random: getNudgeDirection_Random,
 };

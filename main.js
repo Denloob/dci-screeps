@@ -32,6 +32,9 @@ module.exports.loop = function() {
 
     // for each creeps
     for (let name in Game.creeps) {
+        for (let flagName in Game.flags) {
+            Game.flags[flagName].getState(Game.creeps[name])
+        }
         Game.creeps[name].giveWay()
         if (Game.creeps[name].memory.role != undefined)
             // run creep logic
