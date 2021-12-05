@@ -44,12 +44,23 @@ StructureTower.prototype.main =
         }
         // if no one is found
         else {
+            // set the default walls limit
+            let wallsLimit = 0
+            // if room memory is defined
+            if (Memory.rooms && Memory.rooms[this.room.name]) {
+                // if wallsLimit is set right
+                if (_.isObject(Memory.rooms[this.room.name].wallsLimit) && _.isEqual(Object.keys(Memory.rooms[this.room.name].wallsLimit).sort(), ['tower', 'creep'].sort()))
+                    wallsLimit = Memory.rooms[this.room.name].wallsLimit.tower;
+                // else reset to default
+                else Memory.rooms[this.room.name].wallsLimit = {tower: wallsLimit, creep: wallsLimit};
+            }
             // find closest structure with less than max hits
             let structure = this.pos.findClosestByRange(FIND_STRUCTURES, {
                 filter: (s) => s.hits < s.hitsMax &&
-                                ((s.structureType != STRUCTURE_WALL &&
+                                (
+                                    (s.structureType != STRUCTURE_WALL &&
                                     s.structureType != STRUCTURE_RAMPART)
-                                 || s.hits < 150000)
+                                 || s.hits < wallsLimit)
             });
             // try to repair if we find one
             if (structure != undefined) this.repair(structure);

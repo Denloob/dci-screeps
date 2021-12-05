@@ -1,7 +1,7 @@
-var roleBuilder = require('role.builder');
+let roleBuilder = require('role.builder');
 
 module.exports = {
-    // a function to run the logic for this role
+    // a function to run the logic for this role    
     run: function(creep) {
         // if creep is trying to repair something but has no energy left
         if (creep.memory.working == true && creep.carry.energy == 0) {
@@ -16,15 +16,23 @@ module.exports = {
 
         // if creep is supposed to repair something
         if (creep.memory.working == true) {
+            // set the default walls limit
+            let wallsLimit = 0
+            // if rooms wallsLimit is defined
+            if (Memory.rooms && Memory.rooms[creep.room.name]) {
+                if (_.isObject(Memory.rooms[creep.room.name].wallsLimit) && _.isEqual(Object.keys(Memory.rooms[creep.room.name].wallsLimit).sort(), ['tower', 'creep'].sort()))
+                    wallsLimit = Memory.rooms[creep.room.name].wallsLimit.creep;
+                else Memory.rooms[creep.room.name].wallsLimit = {tower: wallsLimit, creep: wallsLimit};
+            }
             // find all walls in the room
-            var walls = creep.room.find(FIND_STRUCTURES, {
-                filter: (s) => (s.structureType == STRUCTURE_WALL || s.structureType == STRUCTURE_RAMPART) && s.hits < 35000
+            let walls = creep.room.find(FIND_STRUCTURES, {
+                filter: (s) => (s.structureType == STRUCTURE_WALL || s.structureType == STRUCTURE_RAMPART) && s.hits < wallsLimit
             });
 
-            var target = undefined;
+            let target = undefined;
 
             // loop with increasing percentages
-            for (let percentage = 0.0001; percentage <= 1; percentage = percentage + 0.0001){
+            for (let percentage = 0.0001; percentage <= 1; percentage += 0.0001){
                 // find a wall with less than percentage hits
                 for (let wall of walls) {
                     if (wall.hits / wall.hitsMax < percentage) {
