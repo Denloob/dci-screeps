@@ -109,17 +109,18 @@ module.exports = {
                 });
                 // if we found one
                 if (structure != undefined) {
-                    // find the terminal
                     let roomMemory = Memory.rooms[creep.room.name];
                     if (roomMemory != undefined) {
-                        let terminalMemory = roomMemory.terminal;
-                        if (terminalMemory == undefined) {
-                            Memory.rooms[creep.room.name].terminal = {active: false, target: NaN, sell: false}
-                        }
-                        let storage = 
-                            terminalMemory != undefined && Object.keys(terminalMemory).length == 3 && terminalMemory.active && terminalMemory.target && Game.rooms[terminalMemory.target].controller.my
-                                ? creep.room.terminal : undefined;
-
+                        let storage;
+                        if (creep.room.terminal) {
+                            // find the terminal
+                            let terminalMemory = roomMemory.terminal;
+                            if (terminalMemory == undefined) {
+                                Memory.rooms[creep.room.name].terminal = {enabled: false, autoSell: [{enabled: false, resource: undefined, minPrice: 0, maxDistance: -1}], from: [{enabled: false, resource: undefined, order: false}], to: [{enabled: false, dealData: undefined, order: false}]};
+                            }
+                            storage = 
+                                terminalMemory != undefined && terminalMemory.active && creep.room.terminal.store[RESOURCE_ENERGY] < 100000 ? creep.room.terminal : undefined;
+                            }
                         // if we dont find one
                         if (storage == undefined) {
                             // find the storage
