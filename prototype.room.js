@@ -6,7 +6,7 @@ Room.prototype.displayData =
         }
         let lastRectSizes = lastRectSizesGlobal[this.name]
         // get the memory of one of the spawns
-        let roomSpawnMemory = Memory.spawns[this.find(FIND_MY_SPAWNS)[0].name]
+        let roomSpawnMemory = this.find(FIND_MY_SPAWNS).length ? Memory.spawns[this.find(FIND_MY_SPAWNS)[0].name]: undefined
         let roomMemory = Memory.rooms[this.name]
         let displayData = roomMemory.displayData
         let fillRect = displayData.fill
@@ -21,27 +21,32 @@ Room.prototype.displayData =
         // // install "Better Comments" to vscode now if u r not gay
         // // install "Better Comments" to vscode now if u r not gay
         let listOfRoles = undefined;
-        if (roomMemory.importListOfRoles)
-            listOfRoles = roomMemory.listOfRoles;
-        else
-            listOfRoles = ['harvester', 'collector', 'attacker', 'dismantler', 'claimer', 'upgrader', 'TM', 'MH', 'repairer', 'builder', 'wallRepairer'];
-        let displayedLDHs = []
-
-        // add LDH or LDC from spawn memory (ROOM_INDEX_WORK)
-        let ldhMin = roomSpawnMemory.minLongDistanceHarvesters;
-        if (ldhMin == undefined) ldhMin = roomSpawnMemory.minLDH;
-        if (ldhMin != undefined) {
-            let ldhMinData = Object.keys(ldhMin);
-            ldhMinData.forEach(data => {
-                if (ldhMin[data] > 0) {
-                    // if ldh data is not in the list of roles, add it
-                    if (!listOfRoles.includes(`$$LDH_${data}`)) listOfRoles.push(`$$LDH_${data}`)
-                }
-            });
+        let displayedLDHs = undefined;
+        let ldhMin = undefined;
+        if (this.find(FIND_MY_SPAWNS).length) {
+            if (roomMemory.importListOfRoles)
+                listOfRoles = roomMemory.listOfRoles;
+            else
+                listOfRoles = ['harvester', 'collector', 'attacker', 'dismantler', 'claimer', 'upgrader', 'TM', 'MH', 'repairer', 'builder', 'wallRepairer'];
+            displayedLDHs = [];
+            
+            // add LDH or LDC from spawn memory (ROOM_INDEX_WORK)
+            ldhMin = roomSpawnMemory.minLongDistanceHarvesters;
+            if (ldhMin == undefined) ldhMin = roomSpawnMemory.minLDH;
+            if (ldhMin != undefined) {
+                let ldhMinData = Object.keys(ldhMin);
+                ldhMinData.forEach(data => {
+                    if (ldhMin[data] > 0) {
+                        // if ldh data is not in the list of roles, add it
+                        if (!listOfRoles.includes(`$$LDH_${data}`)) listOfRoles.push(`$$LDH_${data}`)
+                    }
+                });
+            }
         }
 
         let gray = '#7b7b7b'
 
+        // User Data rect
         this.visual.rect(0, 0, 9, 9, {fill: fillRect, stroke: gray});
         this.visual.text('User Data', 1, 1.3, {color: 'white', font: 0.8, align: LEFT});
         let cpuPersentage = Math.round( Game.cpu.getUsed()*100/Game.cpu.limit *10)/10;
@@ -58,7 +63,7 @@ Room.prototype.displayData =
 
         let listOfNotLimitedRoles = []
         let listOfLimitedRoles = []
-        listOfRoles.forEach(role => {
+        if (this.find(FIND_MY_SPAWNS).length) listOfRoles.forEach(role => {
             if (role == 'MH' || role == 'MM' || role == 'TM' || role == 'builder') {
                 role = `@@${role}`
             }
@@ -85,7 +90,7 @@ Room.prototype.displayData =
 
         // used to fix the indent problem with LDH with diffrent sourceIndex but same room
         let antiIndet = 0;
-        listOfLimitedRoles.forEach((role, indent) => {
+        if (this.find(FIND_MY_SPAWNS).length) listOfLimitedRoles.forEach((role, indent) => {
             let neededCreeps = roomSpawnMemory.minCreeps[role];
             let numOfCreeps = _.sum(creepsInRoom, (c) => c.memory.role == role);
             if (neededCreeps == undefined || role.startsWith('@@')) {
