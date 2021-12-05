@@ -7,8 +7,9 @@ Flag.prototype.build =
 Flag.prototype.calcTask =
     function () {
         if (this.color == COLOR_YELLOW && this.secondaryColor == COLOR_ORANGE) this.build(STRUCTURE_TOWER);
-        if (this.color == COLOR_YELLOW && this.secondaryColor == COLOR_YELLOW) this.build(STRUCTURE_EXTENSION);
-        if (this.color == COLOR_WHITE && this.secondaryColor == COLOR_WHITE) this.build(STRUCTURE_ROAD);
+        else if (this.color == COLOR_ORANGE && this.secondaryColor == COLOR_YELLOW) this.build(STRUCTURE_STORAGE);
+        else if (this.color == COLOR_YELLOW && this.secondaryColor == COLOR_YELLOW) this.build(STRUCTURE_EXTENSION);
+        else if (this.color == COLOR_WHITE && this.secondaryColor == COLOR_WHITE) this.build(STRUCTURE_ROAD);
     };
 Flag.prototype.getState =
     /**
