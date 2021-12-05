@@ -116,10 +116,20 @@ StructureSpawn.prototype.spawnCreepsIfNecessary =
                             // delete the dismantle order
                             delete this.memory.dismantleAttackRoom;
                         }
-                        NewCreepRole = role;
                         break;
                     }
-                    // if no dismantler order was found
+                    // if no dismantle order was found, check for builder order
+                    else if (role == 'builder' && this.memory.buildRoom != undefined && this.memory.buildRoom.length == 2) {
+                        // try to spawn an builder
+                        name = this.createNotWorkerCreep(maxEnergy, role, this.memory.buildRoom[1], {target: this.memory.buildRoom[0]});
+                        // if that worked
+                        if (name == 0) {
+                            // delete the dismantle order
+                            delete this.memory.buildRoom;
+                        }
+                        break;
+                    }
+                    // if no long distane builder order was found
                     else if (role == 'claimer') {
                         // check for claim order
                         if (this.memory.claimRoom != undefined) {
@@ -153,7 +163,7 @@ StructureSpawn.prototype.spawnCreepsIfNecessary =
                             break;
                         }
                     }
-                    // if no reservation order was found, check other roles
+                    // if no order was found, check other roles
                     else if (numberOfCreeps[role] < this.memory.minCreeps[role]) {
                         if (role == 'collector') {
                             name = this.createNotWorkerCreep(maxEnergy, role);
@@ -301,7 +311,7 @@ StructureSpawn.prototype.createCustomCreep =
     };
 // create a new function for StructureSpawn
 StructureSpawn.prototype.createNotWorkerCreep =
-    function(energy, role, numberOfWorkParts=0, additionalMemory = NaN) {
+    function(energy, role, numberOfWorkParts=0, additionalMemory=NaN) {
         // create a balanced body as big as possible with the given energy
         let body = [];
         for (let i = 0; i < numberOfWorkParts; i++) {
@@ -316,21 +326,29 @@ StructureSpawn.prototype.createNotWorkerCreep =
         for (let i = 0; i < numberOfParts; i++) {
             body.push(CARRY);
         }
+        let numOfHeavyParts = body.length
         for (let i = 0; i < numberOfParts; i++) {
             body.push(MOVE);
         }
+        energy -= numberOfParts*200;
+        while (energy >= 50 && body.length < 50 && numOfHeavyParts > 0) {
+            body.push(MOVE);
+            energy -= 50;
+            numOfHeavyParts--;
+        }
+
         let memory = {memory: { role: role, working: false, home: this.room.name } }
-        if (additionalMemory != NaN) {
+        if (additionalMemory !== NaN) {
             for (key in additionalMemory) {
                 memory.memory[key] = additionalMemory[key];
             }
-        } 
+        }
         if (body.length > 50) body = body.slice(0, 50);
         let name = role + Math.floor(Math.random()*100);
-        let newCreep = this.spawnCreep(body, name, {memory: { role: role, working: false, home: this.room.name } });
+        let newCreep = this.spawnCreep(body, name, memory);
         while (newCreep == ERR_NAME_EXISTS){
             name = role + Math.floor(Math.random()*100)
-            newCreep = this.spawnCreep(body, name, {memory: { role: role, working: false, home: this.room.name } });
+            newCreep = this.spawnCreep(body, name, memory);
         }
         
         // create creep with the created body
@@ -629,17 +647,22 @@ StructureSpawn.prototype.createMinerCreep =
 Structure.prototype.maxEnergy =
     function() {
         return this.room.energyCapacityAvailable
-    }
+    };
 Structure.prototype.claimRoom =
     function(target, claimParts=1) {
         if (target != undefined) {this.memory.claimRoom = [target, claimParts]; return [target, claimParts]}
         else return 'target is needed'
-    }
+    };
 Structure.prototype.reserveRoom =
     function(target, claimParts=1) {
         if (target != undefined) {this.memory.reserveRoom = [target, claimParts]; return [target, claimParts]}
         else return 'target is needed'
-    }
+    };
+Structure.prototype.buildRoom =
+    function(target, workParts=1) {
+        if (target != undefined) {this.memory.buildRoom = [target, workParts]; return [target, workParts]}
+        else return 'target is needed'
+    };
 Structure.prototype.sellResource =
     function(resource, minPrice, maxDistance) {
         if (arguments.length == 3) {
@@ -651,4 +674,4 @@ Structure.prototype.sellResource =
             else return `there is no path "Memory.rooms['${this.room.name}'].terminal"`
         }
         else return 'resource, minPrice and maxDistance are needed'
-    }
+    };

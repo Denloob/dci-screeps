@@ -13,28 +13,37 @@ module.exports = {
             // switch state
             creep.memory.working = true;
         }
-
-        // if creep is supposed to complete a constructionSite
-        if (creep.memory.working == true) {
-            // find closest constructionSite
-            var constructionSite = creep.pos.findClosestByPath(FIND_CONSTRUCTION_SITES);
-            // if one is found
-            if (constructionSite != undefined) {
-                // try to build, if the constructionSite is not in range
-                if (creep.build(constructionSite) == ERR_NOT_IN_RANGE) {
-                    // move towards the constructionSite
-                    creep.moveTo(constructionSite, {visualizePathStyle: {stroke: '#ffff00'}});
+        // if in target room
+        if (creep.memory.target == undefined || creep.room.name == creep.memory.target){
+            // if creep is supposed to complete a constructionSite
+            if (creep.memory.working == true) {
+                // find closest constructionSite
+                var constructionSite = creep.pos.findClosestByPath(FIND_CONSTRUCTION_SITES);
+                // if one is found
+                if (constructionSite != undefined) {
+                    // try to build, if the constructionSite is not in range
+                    if (creep.build(constructionSite) == ERR_NOT_IN_RANGE) {
+                        // move towards the constructionSite
+                        creep.moveTo(constructionSite, {visualizePathStyle: {stroke: '#ffff00'}});
+                    }
+                }
+                // if no constructionSite is found
+                else {
+                    // go upgrading the controller
+                    roleUpgrader.run(creep);
                 }
             }
-            // if no constructionSite is found
+            // if creep is supposed to harvest energy from source
             else {
-                // go upgrading the controller
-                roleUpgrader.run(creep);
+                creep.getEnergy(true, true, true);
             }
         }
-        // if creep is supposed to harvest energy from source
+        // if not in the target room...
         else {
-            creep.getEnergy(true, true, true);
+            // find exit to the target room
+            var exit = creep.room.findExitTo(creep.memory.target);
+            // move to the exit
+            creep.moveTo(creep.pos.findClosestByPath(exit), {visualizePathStyle: {stroke: '#feeb75'}});
         }
     }
 };
