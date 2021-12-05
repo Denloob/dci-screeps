@@ -12,16 +12,12 @@ module.exports.loop = function() {
         Game.cpu.generatePixel();
     }
     excuseMe.clearNudges();
-    var CreepsDied = undefined;
     // check for memory entries of died creeps by iterating over Memory.creeps
     for (let name in Memory.creeps) {
         // and checking if the creep is still alive
         if (Game.creeps[name] == undefined) {
             // if not, delete the memory entry
             delete Memory.creeps[name];
-
-            if (CreepsDied == undefined) CreepsDied = name
-            else CreepsDied += ', ' + name
         }
         // if (Game.creeps[name].memory.role == 'longDistanceHarvester') {
         //     Game.creeps[name].memory.role = 'LDH'
@@ -42,7 +38,7 @@ module.exports.loop = function() {
     }
 
     // find all towers
-    var towers = _.filter(Game.structures, s => s.structureType == STRUCTURE_TOWER);
+    let towers = _.filter(Game.structures, s => s.structureType == STRUCTURE_TOWER);
     // for each tower
     for (let tower of towers) {
         // run tower logic
@@ -52,7 +48,7 @@ module.exports.loop = function() {
     // for each spawn
     for (let spawnName in Game.spawns) {
         // run spawn logic
-        Game.spawns[spawnName].spawnCreepsIfNecessary(CreepsDied);
+        Game.spawns[spawnName].spawnCreepsIfNecessary();
     }
     for (let roomName in Game.rooms) {
         roomLogic(roomName);

@@ -3,7 +3,7 @@ var listOfRoles = ['harvester', 'collector', 'attacker', 'dismantler', 'claimer'
 
 // create a new function for StructureSpawn
 StructureSpawn.prototype.spawnCreepsIfNecessary =
-    function (CreepsDied) {
+    function () {
         /** @type {Room} */
         let room = this.room;
         if (!_.isObject(this.memory)) this.memory = {minCreeps: {harvester: 2, collector: 0, upgrader: 2, builder: 1, repairer: 0, wallRepairer: 0, MH: 1, TM: 1}, minLongDistanceHarvesters: {}, minLongDistanceCollectors: {}, minDeffenders: {attacker: 2}};
