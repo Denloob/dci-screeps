@@ -2,7 +2,7 @@ module.exports = {
     // a function to run the logic for creep role
     run: function(creep) {
         let room = creep.room;
-        if (room.controller.my && room.find(FIND_MY_SPAWNS).length) {
+        if (room.controller && room.controller.my && room.find(FIND_MY_SPAWNS).length) {
             let spawn = creep.pos.findClosestByPath(FIND_MY_STRUCTURES, {filter: (s) => (s.structureType == STRUCTURE_SPAWN)});
             creep.moveTo(spawn, {reusePath: 10, visualizePathStyle: {stroke: '#000000'}});
             spawn.recycleCreep(creep);
