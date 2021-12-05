@@ -191,6 +191,7 @@ StructureSpawn.prototype.spawnCreepsIfNecessary =
                             if (constracters_sites.length) {
                                 name = this.createCustomCreep(maxEnergy, 'builder');
                             }
+                            else continue;
                         }
                         else {
                             name = this.createCustomCreep(maxEnergy, role);
