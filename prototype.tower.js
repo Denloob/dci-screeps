@@ -7,37 +7,29 @@ StructureTower.prototype.main =
         // if one is found...
         if (target != undefined) {
             // ...FIRE!
-            this.attack(target);
-            Game.notify('[' + convertTimeZone(new Date(), 'Asia/Jerusalem') + '] tower attacked a creep ' + target)
+            let attackCode = this.attack(target);
+            let name;
+            let roomSpawns = this.room.find(FIND_MY_SPAWNS);
+            if (target.owner.username != 'Invader' || this.room.find(FIND_HOSTILE_CREEPS, { filter: (c) => !Memory.rooms[this.room.name].whiteList.includes(c.owner.username)}).length > 1) {
+                let time = new Date().toLocaleString("en-US", {timeZone: 'Asia/Jerusalem', hour12: false});
+                Game.notify(`[${time}] tower in ${this.room.name} attacked a creep ${target} with code ${attackCode}`);
 
-            let name = undefined;
-            let roomSpawn = Game.spawns[
-                this.room.find(
-                    FIND_MY_STRUCTURES,
-                    { filter : (s) => s.structureType == STRUCTURE_SPAWN}
-                    )[0].name
-                ];
-            let numOfRoomDeffenders = _.sum(Game.creeps, (c) => c.memory.role == 'attacker' && c.memory.target == this.room.name);
-            //// console.log(this.room.find(FIND_HOSTILE_CREEPS, { filter: (c) => !Memory.rooms[this.room.name].whiteList.includes(c.owner)}).length);
-
-            // if target owner is not invader or there is more then one hostile creep AND there is no max amount of room deffenders
-            if (
-                (
-                    target.owner.username != 'Invader' || 
-                    this.room.find(FIND_HOSTILE_CREEPS, { filter: (c) => !Memory.rooms[this.room.name].whiteList.includes(c.owner)}).length > 1
-                ) &&
-                roomSpawn.memory.minDeffenders.attacker && numOfRoomDeffenders < roomSpawn.memory.minDeffenders.attacker)
-                {   
-                    // create deffender
-                    name = roomSpawn.createAttacker(
-                        this.room.energyCapacityAvailable,
-                        20, // numberOfAttackParts
-                        0,  // numberOfWorkParts
-                        0, // numberOfCarryParts
-                        this.room.name, // target
-                        true // tough
-                    );
-                }
+                roomSpawns.forEach(roomSpawn => {
+                    let numOfRoomDeffenders = _.sum(Game.creeps, (c) => c.memory.role == 'attacker' && c.memory.target == this.room.name);
+                    //// console.log(this.room.find(FIND_HOSTILE_CREEPS, { filter: (c) => !Memory.rooms[this.room.name].whiteList.includes(c.owner)}).length);
+        
+                    // if target owner is not invader or there is more then one hostile creep AND there is no max amount of room deffenders
+                    if (roomSpawn.memory.minDeffenders.attacker && numOfRoomDeffenders < roomSpawn.memory.minDeffenders.attacker) {   
+                            // create deffender
+                            name = roomSpawn.createAttacker(
+                                this.room.energyCapacityAvailable,
+                                this.room.name, // target
+                                20, // numberOfAttackParts
+                                true // tough
+                            );
+                        } 
+                });
+            }
         }
         else if (demagedCreep != undefined) {
             this.heal(demagedCreep);
@@ -66,7 +58,3 @@ StructureTower.prototype.main =
             if (structure != undefined) this.repair(structure);
         }
     };
-
-function convertTimeZone(date, tzString) {
-    return new Date((typeof date === "string" ? new Date(date) : date).toLocaleString("en-US", {timeZone: tzString}));   
-}
