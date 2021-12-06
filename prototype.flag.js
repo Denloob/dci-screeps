@@ -19,13 +19,18 @@ Flag.prototype.getState =
      */
     function (creep, target) {
         if (this.color == COLOR_PURPLE && this.secondaryColor == COLOR_PURPLE) {
+            if (creep.memory.allowStandingTimer == undefined) creep.memory.allowStandingTimer = 0;
             if (this.name.startsWith('blockStanding')) this.memory.allowStanding = false
             if (this.name.startsWith('blockStanding')) this.memory.allowStandingException = {role: 'miner'}
             let allowStanding = creep.memory.role == this.memory.allowStandingException.role ? !this.memory.allowStanding: this.memory.allowStanding
             if (!allowStanding && this.pos.x == creep.pos.x && this.pos.y == creep.pos.y && this.pos.roomName == creep.pos.roomName) {
-                if (target != undefined)
-                    return creep.moveTo(target, {visualizePathStyle: {stroke: '#ffffff'}})
-                else return creep.move(excuseMe.getNudgeDirection_Random(creep.pos))
+                creep.memory.allowStandingTimer++;
+                if (creep.memory.allowStandingTimer >= 3) {
+                    creep.memory.allowStandingTimer = 0;
+                    if (target != undefined)
+                        return creep.moveTo(target, {visualizePathStyle: {stroke: '#ffffff'}})
+                    else return creep.move(excuseMe.getNudgeDirection_Random(creep.pos))
+                }
             }
         }
     };
