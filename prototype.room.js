@@ -103,7 +103,7 @@ Room.prototype.displayData =
                             if (!displayedLDHs.includes(roomName)) {
                                 role = `LDH ${roomName}`
                                 // get num of ldh with the roomName target
-                                numOfCreeps =  _.sum(Game.creeps, (c) => c.memory.role == 'LDH' && c.memory.target == roomName);
+                                numOfCreeps =  _.sum(Game.creeps, (c) => c.memory.role == 'LDH' && c.memory.target == roomName && c.memory.home == this.name);
                                 // create copy of ldhMin
                                 data = Object.assign({}, ldhMin);
                                 // make objec wich contains only keys that start with roomName, get, the values, and sum them ([1, 2, 3] => 6) so {aa: 1, ab: 2, bc: 3} will return 3
@@ -122,7 +122,7 @@ Room.prototype.displayData =
                         case 'ROOM_INDEX':
                             if (!displayedLDHs.includes(roomName + sourceIndex)) {
                                 role = `${roomName}_${sourceIndex}`;
-                                numOfCreeps =  _.sum(Game.creeps, (c) => c.memory.role == 'LDH' && c.memory.target == roomName && c.memory.sourceIndex == sourceIndex);
+                                numOfCreeps =  _.sum(Game.creeps, (c) => c.memory.role == 'LDH' && c.memory.target == roomName && c.memory.sourceIndex == sourceIndex && c.memory.home == this.name);
                                 // create copy of ldhMin
                                 data = Object.assign({}, ldhMin);
                                 // make object wich contains only keys that start with roomName, get, the values, and sum them ([1, 2, 3] => 6) so {aa: 1, ab: 2, bc: 3} will return 3
