@@ -121,8 +121,8 @@ Room.prototype.displayData =
                             
                         case 'ROOM_INDEX':
                             if (!displayedLDHs.includes(roomName + sourceIndex)) {
-                                role = `${roomName} ${sourceIndex}`;
-                                numOfCreeps =  _.sum(Game.creeps, (c) => c.memory.role == 'LDH' && c.memory.target == roomName && c.memory.index == sourceIndex);
+                                role = `${roomName}_${sourceIndex}`;
+                                numOfCreeps =  _.sum(Game.creeps, (c) => c.memory.role == 'LDH' && c.memory.target == roomName && c.memory.sourceIndex == sourceIndex);
                                 // create copy of ldhMin
                                 data = Object.assign({}, ldhMin);
                                 // make object wich contains only keys that start with roomName, get, the values, and sum them ([1, 2, 3] => 6) so {aa: 1, ab: 2, bc: 3} will return 3
@@ -202,9 +202,9 @@ Room.prototype.displayData =
         spawnsInRoom.forEach((spawn, indent) => {
             this.visual.text(`${spawn.name}`, 41, 2.8+2*indent, {color: 'white', font: 0.7, align: LEFT});
             if (spawn.spawning) 
-            this.visual.text(`Spawning: ${Game.creeps[spawn.spawning.name].memory.role}`, 41, 3.5+1.9*indent, {color: 'green', font: 0.5, align: LEFT});
+            this.visual.text(`Spawning: ${Game.creeps[spawn.spawning.name].memory.role}`, 41, 3.6+1.9*indent, {color: 'green', font: 0.7, align: LEFT});
             else
-            this.visual.text(`Spawning: false`, 41, 3.5+1.9*indent, {color: 'grey', font: 0.5, align: LEFT});
+            this.visual.text(`Spawning: false`, 41, 3.6+1.9*indent, {color: 'grey', font: 0.7, align: LEFT});
             endIndex = 2+indent;
         });
         endIndex *= 1.9;
