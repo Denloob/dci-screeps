@@ -23,6 +23,7 @@ module.exports = {
                     // a property called filter which can be a function
                     // we use the arrow operator to define it
                     filter: (s) => (s.structureType == STRUCTURE_SPAWN
+                                || s.structureType == STRUCTURE_LAB
                                 || s.structureType == STRUCTURE_EXTENSION
                                 || s.structureType == STRUCTURE_TOWER)
                                 && s.energy < s.energyCapacity
@@ -39,7 +40,7 @@ module.exports = {
                     // try to transfer energy, if it is not in range
                     if (creep.transfer(structure, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
                         // move towards it
-                        creep.moveTo(structure, {visualizePathStyle: {stroke: '#ffffff'}});
+                        creep.moveTo(structure, {reusePath: 20, visualizePathStyle: {stroke: '#ffffff'}});
                     }
                 }
             }
@@ -53,14 +54,19 @@ module.exports = {
         }
         // if creep is supposed to harvest energy from source
         else {
+            // if there is no WORK parts in the creep
+            if (_.filter(creep.body, b => b.type == WORK).length == 0) {
+                if (creep.memory.hardRole == undefined) creep.memory.hardRole = creep.memory.role;
+                creep.memory.role == 'recycle';
+            }
             // if in target room
-            if (creep.room.name == creep.memory.target){
+            else if (creep.room.name == creep.memory.target) {
                 // find closest source
                 var source = creep.room.find(FIND_SOURCES)[creep.memory.sourceIndex]
                 // try to harvest energy, if the source is not in range
                 if (creep.harvest(source) == ERR_NOT_IN_RANGE) {
                     // move towards the source
-                    creep.moveTo(source, {visualizePathStyle: {stroke: '#feeb75'}});
+                    creep.moveTo(source, {reusePath: 10, visualizePathStyle: {stroke: '#feeb75'}});
                 }
             }
             // if not in target room...
