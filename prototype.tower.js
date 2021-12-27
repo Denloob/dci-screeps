@@ -1,34 +1,27 @@
+const Returns = ['OK', 'ERR_NOT_OWNER', 'ERR_NO_PATH', 'ERR_NAME_EXISTS', 'ERR_BUSY', 'ERR_NOT_FOUND', 'ERR_NOT_ENOUGH_RESOURCES', 'ERR_INVALID_TARGET', 'ERR_FULL', 'ERR_NOT_IN_RANGE', 'ERR_INVALID_ARGS', 'ERR_TIRED', 'ERR_NO_BODYPART', 'ERR_RCL_NOT_ENOUGH', 'ERR_GCL_NOT_ENOUGH']
 // create a new function for StructureTower
 StructureTower.prototype.main =
     function () {
         // find closest hostile creep the owner of which is not in the white list of the room
-        let target = this.pos.findClosestByRange(FIND_HOSTILE_CREEPS, { filter: (c) => !Memory.rooms[this.room.name].whiteList.includes(c.owner)});
-        let demagedCreep = this.pos.findClosestByRange(FIND_MY_CREEPS, { filter: (c) => c.hits < c.hitsMax});
+        let target = this.pos.findClosestByRange(FIND_HOSTILE_CREEPS, { filter: (c) => !Memory.rooms[this.room.name].whiteList.includes(c.owner) && _.some(c.body, b => b.type == ATTACK || b.type == CLAIM || b.type == RANGED_ATTACK || b.type == HEAL)});
+        if (target == undefined) this.pos.findClosestByRange(FIND_HOSTILE_CREEPS, { filter: (c) => !Memory.rooms[this.room.name].whiteList.includes(c.owner) });
+        
+        let demagedCreep = this.pos.findClosestByRange(FIND_MY_CREEPS, { filter: (c) => c.hits < c.hitsMax && c.memory.role != 'scout'});
         // if one is found...
         if (target != undefined) {
             // ...FIRE!
             let attackCode = this.attack(target);
-            let name;
-            let roomSpawns = this.room.find(FIND_MY_SPAWNS);
-            if (target.owner.username != 'Invader' || this.room.find(FIND_HOSTILE_CREEPS, { filter: (c) => !Memory.rooms[this.room.name].whiteList.includes(c.owner.username)}).length > 1) {
-                let time = new Date().toLocaleString("en-US", {timeZone: 'Asia/Jerusalem', hour12: false});
-                Game.notify(`[${time}] tower in ${this.room.name} attacked a creep ${target} with code ${attackCode}`);
-
-                roomSpawns.forEach(roomSpawn => {
-                    let numOfRoomDeffenders = _.sum(Game.creeps, (c) => c.memory.role == 'attacker' && c.memory.target == this.room.name);
-                    //// console.log(this.room.find(FIND_HOSTILE_CREEPS, { filter: (c) => !Memory.rooms[this.room.name].whiteList.includes(c.owner)}).length);
-        
-                    // if target owner is not invader or there is more then one hostile creep AND there is no max amount of room deffenders
-                    if (roomSpawn.memory.minDeffenders.attacker && numOfRoomDeffenders < roomSpawn.memory.minDeffenders.attacker) {   
-                            // create deffender
-                            name = roomSpawn.createAttacker(
-                                this.room.energyCapacityAvailable,
-                                this.room.name, // target
-                                20, // numberOfAttackParts
-                                true // tough
-                            );
-                        } 
-                });
+            if (target.owner.username != 'Invader' /** || this.room.find(FIND_HOSTILE_CREEPS, { filter: (c) => !Memory.rooms[this.room.name].whiteList.includes(c.owner.username)}).length > 1 */) {
+                let addLeadingZero = (num) => ('0' + num).slice(-2);
+                let fullDate = new Date();
+                let GMT = 2;
+                let date = `${addLeadingZero(fullDate.getDate())}/${addLeadingZero(fullDate.getMonth()+1)}/${fullDate.getFullYear()}`
+                let time = `${addLeadingZero(fullDate.getHours()+GMT)}:${addLeadingZero(fullDate.getMinutes())}`;
+                let attackCodeName = Returns[Math.abs(attackCode)];
+                Game.notify(`[${date} ${time}] tower in ${this.room.name} attacked a creep ${target.name} of ${target.owner.username} with code ${attackCodeName}`);
+                if (target.owner.username == 'Tigga' && _.some(target.body, b => b.type == ATTACK || b.type == CLAIM || b.type == RANGED_ATTACK || b.type == HEAL) && this.room.find(FIND_MY_SPAWNS).length) {
+                    this.room.controller.activateSafeMode()
+                }
             }
         }
         else if (demagedCreep != undefined) {

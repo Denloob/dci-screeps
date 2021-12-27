@@ -20,16 +20,19 @@ module.exports = {
                 // we use the arrow operator to define it
                 filter: (s) => (s.structureType == STRUCTURE_SPAWN
                             || s.structureType == STRUCTURE_EXTENSION
+                            || s.structureType == STRUCTURE_LAB
                             || (s.structureType == STRUCTURE_TOWER && s.store[RESOURCE_ENERGY] < 800))
-                            && s.energy < s.energyCapacity
+                            && s.store[RESOURCE_ENERGY] < s.store.getCapacity(RESOURCE_ENERGY)
             });
             
             // if we don't found one
-            // if (structure == undefined && creep.room.terminal != undefined && creep.room.terminal.store[RESOURCE_ENERGY] < 110000 && creep.room.name == 'E9N23') {
-            if (creep.room.storage && creep.room.storage.store[RESOURCE_ENERGY] > 20000 && structure == undefined && creep.room.terminal != undefined && creep.room.terminal.store[RESOURCE_ENERGY] < 300000) {
+            if (creep.room.storage && structure == undefined && creep.room.terminal != undefined && (
+                (creep.room.storage.store[RESOURCE_ENERGY] > 50000 && creep.room.terminal.store[RESOURCE_ENERGY] < 50000) ||
+                (creep.room.storage.store[RESOURCE_ENERGY] > 150000 && creep.room.terminal.store[RESOURCE_ENERGY] < 100000)
+            )) {
                 structure = creep.room.terminal;
             }
-
+            
             // if we don't found one
             if (structure == undefined) {
                 // find a storage
@@ -47,7 +50,7 @@ module.exports = {
             // if there is more than energy in creeps inventory
             if (creep.store && Object.keys(creep.store).length > 0 && Object.keys(creep.store)[0] != RESOURCE_ENERGY) {
                 // find a storage
-                storage = creep.room.storage;
+                let storage = creep.room.storage;
             
                 // if we found one
                 if (storage != undefined && storage.store.getFreeCapacity()) {

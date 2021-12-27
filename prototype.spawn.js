@@ -1,5 +1,5 @@
-var listOfRoles = ['harvester', 'collector', 'attacker', 'dismantler', 'claimer', 'upgrader',
-'TM', 'MH', 'repairer', 'builder', 'wallRepairer'];
+var listOfRoles = ['harvester', 'collector', 'deffender', 'healer', 'attacker', 'dismantler', 'claimer', 'upgrader',
+'TM', 'MH', 'repairer', 'builder', 'wallRepairer', 'scout'];
 
 // create a new function for StructureSpawn
 StructureSpawn.prototype.spawnCreepsIfNecessary =
@@ -90,14 +90,34 @@ StructureSpawn.prototype.spawnCreepsIfNecessary =
                     }
                 }
             }
-
             // if none of the above caused a spawn command check for other roles
             if (name == undefined) {
                 for (let role of listOfRoles) {
-                    if (role == 'attacker' && this.memory.attackRoom != undefined && this.memory.attackRoom.length == 3) {
-                        let attackRoomData = this.memory.attackRoom;
+                    if (role == 'deffender') { // TODO TEST IF WORKS AND FIX -- 09.12
+                        let numOfRoomDeffenders = _.sum(Game.creeps, (c) => c.memory.role == 'attacker' && c.memory.target == this.room.name);
+                        if(this.memory.minDeffenders.attacker && numOfRoomDeffenders < this.memory.minDeffenders.attacker) {  
+                            let hostileCreeps = this.room.find(FIND_HOSTILE_CREEPS, {filter: (c) => _.filter(c.body, b => b.type == ATTACK || b.type == HEAL || b.type == WORK).length});
+                            if (hostileCreeps.length && (_.sum(hostileCreeps, hc => hc.owner.username != 'Invader')) || hostileCreeps.length > 4) {
+                                // create deffender
+                                name = this.createAttacker(
+                                    this.room.energyCapacityAvailable,
+                                    this.room.name, // target
+                                    Math.floor(this.room.energyCapacityAvailable/200)+1,
+                                    true // tough
+                                );
+                                let time = new Date().toLocaleString("en-US", {timeZone: 'Asia/Jerusalem', hour12: false});
+                                Game.notify(`[${time}] spawn in ${this.room.name} spawned a deffender because hostile creeps found with code ${name}. first creep found: ${hostileCreeps[0].name} of ${hostileCreeps[0].owner.username}`);
+                                console.log(`spawn in ${this.room.name} spawned a deffender because hostile creeps found with code ${name}. first creep found: ${hostileCreeps[0].name} of ${hostileCreeps[0].owner.username}`);
+                                break;
+                            }
+                            else continue;
+                        }
+                        else continue;
+                    }
+                    else if (role == 'attacker' && this.memory.attackRoom != undefined && this.memory.attackRoom.length >= 3) {
+                        let attackRoomData = this.memory.attackRoom
                         // try to spawn an attacker
-                        name = this.createAttacker(maxEnergy, attackRoomData[0], attackRoomData[1], attackRoomData[2]);
+                        name = this.createAttacker(maxEnergy, attackRoomData[0], attackRoomData[1], attackRoomData[2], attackRoomData[3]);
                         // if that worked
                         if (name == 0) {
                             // delete the attack order
@@ -106,11 +126,23 @@ StructureSpawn.prototype.spawnCreepsIfNecessary =
                         NewCreepRole = role;
                         break;
                     }
-                    // if no attacker order was found, check for dismantle attacker order
-                    else if (role == 'dismantler' && this.memory.dismantleAttackRoom != undefined && this.memory.dismantleAttackRoom.length == 2) {
+                    // if no attacker order was found, check for healer attacker order
+                    else if (role == 'healer' && this.memory.healTarget != undefined && this.memory.healTarget.length >= 3) {
+                        let healTargetData = this.memory.healTarget;
+                        // try to spawn an healer
+                        let name = this.createHealer(maxEnergy, healTargetData[0], healTargetData[1], healTargetData[2], healTargetData[3]);
+                        // if that worked
+                        if (name == 0) {
+                            // delete the dismantle order
+                            delete this.memory.healTarget;
+                        }
+                        break;
+                    }
+                    // if no healer order was found, check for dismantle attacker order
+                    else if (role == 'dismantler' && this.memory.dismantleAttackRoom != undefined && this.memory.dismantleAttackRoom.length >= 3) {
                         dismantleAttackRoomData = this.memory.dismantleAttackRoom;
                         // try to spawn an attacker
-                        name = this.createDismantler(maxEnergy, dismantleAttackRoomData[0], dismantleAttackRoomData[1], room.name);
+                        name = this.createDismantler(maxEnergy, dismantleAttackRoomData[0], dismantleAttackRoomData[1], dismantleAttackRoomData[2], dismantleAttackRoomData[3]);
                         // if that worked
                         if (name == 0) {
                             // delete the dismantle order
@@ -118,7 +150,7 @@ StructureSpawn.prototype.spawnCreepsIfNecessary =
                         }
                         break;
                     }
-                    // if no dismantle order was found, check for builder order
+                    // if no dismantle attack order was found, check for builder order
                     else if (role == 'builder' && this.memory.buildRoom != undefined && this.memory.buildRoom.length == 2) {
                         // try to spawn an builder
                         name = this.createNotWorkerCreep(maxEnergy, role, this.memory.buildRoom[1], {target: this.memory.buildRoom[0]});
@@ -129,7 +161,21 @@ StructureSpawn.prototype.spawnCreepsIfNecessary =
                         }
                         break;
                     }
-                    // if no long distane builder order was found
+                    // if no builder order was found, check for scout order
+                    else if (role == 'scout' && _.isString(this.memory.scoutRoom)) {
+                        // try to spawn an builder
+                        let body = [MOVE],
+                        name = `${role[0]}${role.charCodeAt(1)}_${Game.time}`,
+                        memory = {memory: {role: role, working: false, home: this.room.name, target: this.memory.scoutRoom, notifyWhenAttacked: true}};
+                        name = this.spawnCreep(body, name, memory);
+                        // if that worked
+                        if (name == 0) {
+                            // delete the dismantle order
+                            delete this.memory.scoutRoom;
+                        }
+                        break;
+                    }
+                    // if no scout order was found
                     else if (role == 'claimer') {
                         // check for claim order
                         if (this.memory.claimRoom != undefined) {
@@ -140,6 +186,7 @@ StructureSpawn.prototype.spawnCreepsIfNecessary =
                             if (claimRoomOrder.length != 2) claimParts = 1;
                             else claimParts = claimRoomOrder[1];
                             name = this.createClaimerCreep(target=target, numberOfClaimParts=claimParts, reserve=false);
+                            
                             // if that worked
                             if (name == 0) {
                                 // delete the claim order
@@ -203,15 +250,14 @@ StructureSpawn.prototype.spawnCreepsIfNecessary =
             // if none of the above caused a spawn command check for LongDistanceHarvesters
             /** @type {Object.<string, number>} */
             let numberOfLongDistanceHarvesters = {};
-            if (name == undefined) {
+            if (name == undefined && this.memory.healTarget == undefined && this.memory.buildRoom == undefined && this.memory.dismantleAttackRoom == undefined && this.memory.attackRoom == undefined) {
                 // count the number of long distance harvesters globally
                 for (let LDHData in this.memory.minLongDistanceHarvesters) {
                     let [roomName, sourceIndex, workParts] = LDHData.split('_');
                     numberOfLongDistanceHarvesters[LDHData] = _.sum(Game.creeps, (c) =>
-                        c.memory.role == 'LDH' && c.memory.target == roomName && c.memory.sourceIndex == sourceIndex)
+                        c.memory.role == 'LDH' && c.memory.target == roomName && c.memory.sourceIndex == sourceIndex && c.memory.home == this.room.name);
                     if (numberOfLongDistanceHarvesters[LDHData] < this.memory.minLongDistanceHarvesters[LDHData]) {
                         name = this.createLongDistanceHarvester(maxEnergy, workParts, room.name, roomName, sourceIndex);
-                        NewCreepRole = 'LDH ' + roomName + ' ' + sourceIndex;
                     }
                 }
             }
@@ -267,9 +313,9 @@ StructureSpawn.prototype.spawnCreepsIfNecessary =
 
 // create a new function for StructureSpawn
 StructureSpawn.prototype.createCustomCreep =
-    function(energy, roleName) {
+    function(energy, role) {
             // create a balanced body as big as possible with the given energy
-            let numberOfParts = Math.floor(energy / 200);
+            let numberOfParts = Math.floor(energy / (BODYPART_COST[MOVE]+BODYPART_COST[CARRY]+BODYPART_COST[WORK]));
             // make sure the creep is not too big (more than 50 parts)
             numberOfParts = Math.min(numberOfParts, Math.floor(50 / 3));
             let body = [];
@@ -290,22 +336,14 @@ StructureSpawn.prototype.createCustomCreep =
                 energy -= 50;
                 numOfHeavyParts--;
             }
-            if (body.length > 50) {
-                body = []
-                for (let i = 0; i < 50; i++) {
-                    body.push(WORK);
-                    body.push(MOVE);
-                    body.push(CARRY);
-                }
-            }
             if (body.length > 50) body = body.slice(0, 50)
         
-        let name = roleName + Math.floor(Math.random()*100)
-        let newCreep = this.spawnCreep(body, name, {memory: { role: roleName, working: false, home: this.room.name } });
-        while (newCreep == ERR_NAME_EXISTS){
-            name = roleName + Math.floor(Math.random()*100)
-            newCreep = this.spawnCreep(body, name, {memory: { role: roleName, working: false, home: this.room.name } });
-        }
+        let name = `${role[0]}${role.charCodeAt(1)}_${Game.time}`
+        let newCreep = this.spawnCreep(body, name, {memory: { role: role, working: false, home: this.room.name } });
+        // while (newCreep == ERR_NAME_EXISTS){
+        //     name = role + Math.floor(Math.random()*100)
+        //     newCreep = this.spawnCreep(body, name, {memory: { role: role, working: false, home: this.room.name } });
+        // }
 
         // create creep with the created body and the given role
         return newCreep;
@@ -315,15 +353,12 @@ StructureSpawn.prototype.createNotWorkerCreep =
     function(energy, role, numberOfWorkParts=0, additionalMemory=NaN) {
         // create a balanced body as big as possible with the given energy
         let body = [];
-        for (let i = 0; i < numberOfWorkParts; i++) {
-            body.push(WORK);
-        }
-
-        energy -= 100*numberOfWorkParts;
+        for (let i = 0; i < numberOfWorkParts; i++) body.push(WORK);
+        energy -= BODYPART_COST[WORK]*numberOfWorkParts;
         
-        let numberOfParts = Math.floor(energy / 100);
+        let numberOfParts = Math.floor(energy / (BODYPART_COST[MOVE]+BODYPART_COST[CARRY]));
         // make sure the creep is not too big (more than 50 parts)
-        numberOfParts = Math.min(numberOfParts, Math.floor(50 / 2)); //// wrong fixing to 50
+        numberOfParts = Math.min(numberOfParts, Math.floor(50 / 2));
         for (let i = 0; i < numberOfParts; i++) {
             body.push(CARRY);
         }
@@ -331,7 +366,7 @@ StructureSpawn.prototype.createNotWorkerCreep =
         for (let i = 0; i < numberOfParts; i++) {
             body.push(MOVE);
         }
-        energy -= numberOfParts*200;
+        energy -= numberOfParts*(BODYPART_COST[MOVE]+BODYPART_COST[CARRY]+BODYPART_COST[WORK]);
         while (energy >= 50 && body.length < 50 && numOfHeavyParts > 0) {
             body.push(MOVE);
             energy -= 50;
@@ -340,40 +375,31 @@ StructureSpawn.prototype.createNotWorkerCreep =
 
         let memory = {memory: { role: role, working: false, home: this.room.name } }
         if (additionalMemory !== NaN) {
-            for (key in additionalMemory) {
+            for (let key in additionalMemory) {
                 memory.memory[key] = additionalMemory[key];
             }
         }
-        if (body.length > 50) body = body.slice(0, 50);
-        let name = role + Math.floor(Math.random()*100);
+        let name = `${role[0]}${role.charCodeAt(1)}_${Game.time}`
         let newCreep = this.spawnCreep(body, name, memory);
-        while (newCreep == ERR_NAME_EXISTS){
-            name = role + Math.floor(Math.random()*100)
-            newCreep = this.spawnCreep(body, name, memory);
-        }
         
         // create creep with the created body
         return newCreep;
     };
     // create a new function for StructureSpawn
-    StructureSpawn.prototype.createLongDistanceHarvester =
+StructureSpawn.prototype.createLongDistanceHarvester =
     function(energy, numberOfWorkParts, home, target, sourceIndex) {
         // create a body with the specified number of WORK parts and one MOVE part per non-MOVE part
         let body = [];
         for (let i = 0; i < numberOfWorkParts; i++) body.push(WORK);
-        
-        // 150 = 100 (cost of WORK) + 50 (cost of MOVE)
-        energy -= 150*numberOfWorkParts;
-
-        
-        let numberOfParts = Math.floor(energy / 100);
+        energy -= (BODYPART_COST[MOVE]+BODYPART_COST[WORK])*numberOfWorkParts;
+        let numberOfParts = Math.floor(energy / (BODYPART_COST[MOVE]+BODYPART_COST[CARRY]));
         // make sure the creep is not too big (more than 50 parts)
         numberOfParts = Math.min(numberOfParts, Math.floor((50 - numberOfWorkParts * 2) / 2));
         for (let i = 0; i < numberOfParts; i++) body.push(CARRY);
         for (let i = 0; i < numberOfParts + parseInt(numberOfWorkParts); i++) body.push(MOVE);
 
         if (body.length > 50) body = body.slice(0, 50)
-        let name = 'LDH ' + target + '_' + Math.floor(Math.random()*100)
+        let name = `LDH_${Game.time}`
         let newCreep = this.spawnCreep(body, name, {memory: {
             role: 'LDH',
             home: home,
@@ -381,16 +407,6 @@ StructureSpawn.prototype.createNotWorkerCreep =
             sourceIndex: sourceIndex,
             working: false
         } });
-        while (newCreep == ERR_NAME_EXISTS){
-            name = 'LDH ' + target + '_' + Math.floor(Math.random()*100)
-            newCreep = this.spawnCreep(body, name, {memory: {
-                role: 'LDH',
-                home: home,
-                target: target,
-                sourceIndex: sourceIndex,
-                working: false
-            } });
-        }
         // create creep with the created body
         return newCreep;
     };
@@ -399,110 +415,51 @@ StructureSpawn.prototype.createLongDistanceCollector =
     function(energy, home, target) {
         let body = [];
         
-        let numberOfParts = Math.floor(energy / 100);
+        let numberOfParts = Math.floor(energy / (BODYPART_COST[MOVE]+BODYPART_COST[CARRY]));
         numberOfParts = Math.min(numberOfParts, Math.floor(50 / 2));
         for (let i = 0; i < numberOfParts; i++) {body.push(CARRY);}
         for (let i = 0; i < numberOfParts; i++) {body.push(MOVE);}
 
-        if (body.length > 50) {
-            body = [];
-            for (let i = 0; i < 50-numberOfWorkParts; i++) {
-                body.push(CARRY);
-                body.push(MOVE);
-            }
-        }
-
         if (body.length > 50) body = body.slice(0, 50)
         
-        let name = 'LDC ' + target + '_' + Math.floor(Math.random()*100)
+        let name = `LDC_${Game.time}`
         let newCreep = this.spawnCreep(body, name, {memory: {
             role: 'LDC',
             home: home,
             target: target,
             working: false
         } });
-        while (newCreep == ERR_NAME_EXISTS){
-            name = 'LDC ' + target + '_' + Math.floor(Math.random()*100)
-            newCreep = this.spawnCreep(body, name, {memory: {
-                role: 'LDC',
-                home: home,
-                target: target,
-                working: false
-            } });
-        }
-
         // create creep with the created body
         return newCreep;
     };
 // create a new function for StructureSpawn
 StructureSpawn.prototype.createAttacker =
     // // data for creep creation in the format name: true/false/data for example {target: E7N23, attack: {numberOfAttackParts: 10}, dismantle: {numberOfWorkParts}}
-    function(energy, target, numberOfAttackParts, tough) {
+    function(energy, target, numberOfAttackParts, tough, id) {
         let body = [];
-        for (let i = 0; i < numberOfAttackParts && body.length < 50; i++) {body.push(ATTACK);}
-
-        energy -= 80*numberOfAttackParts;
-
-        let body_backup = [...body]
+        for (let i = 0; i < numberOfAttackParts && body.length < 49; i++) {body.push(ATTACK); body.push(MOVE);}
+        energy -= (BODYPART_COST[ATTACK]+BODYPART_COST[MOVE])*numberOfAttackParts;
         if (tough) {
-            let numberOfParts = Math.floor(energy / 53);
-            for (let i = 0; i < numberOfParts && body.length < 50; i++) {body.push(MOVE);}
-            
-            energy -= 50*numberOfParts;
-            numberOfParts = Math.floor((50-numberOfAttackParts-numberOfParts));
-            for (let i = 0; i < numberOfParts && body.length < 50; i++) {body.push(TOUGH);}
-
-            if (body.length > 50) {
-                body = [...body_backup];
-                for (let i = 0; i < 50-body_backup.length; i++) {
-                    body.push(MOVE); body.push(MOVE); body.push(MOVE);
-                    body.push(TOUGH); body.push(TOUGH);
-                }
-            }
+            let numberOfParts = Math.min(Math.floor(energy/(BODYPART_COST[MOVE]+BODYPART_COST[TOUGH])), Math.floor((25-numberOfAttackParts)));
+            for (let i = 0; i < numberOfParts && body.length < 49; i++) {body.push(TOUGH); body.push(MOVE);}
         }
-        else {
-            let numberOfParts = Math.floor(energy / 50);
-            for (let i = 0; i < numberOfParts && body.length < 50; i++) {body.push(MOVE)}
-            
-            if (body.length > 50) {
-                body = [...body_backup];
-                for (let i = 0; i < 50-body_backup.length; i++) {
-                    body.push(MOVE);
-                }
-            }
-        }
-        if (body.length > 50) body = body.slice(0, 50);
-        // // let counter = 0
-        // // for (i of body) {
-        // //     switch (i) {
-        // //         case ATTACK:
-        // //             counter += 80
-        // //         case WORK:
-        // //             counter += 100
-        // //         case CARRY:
-        // //             counter += 50
-        // //         case MOVE:
-        // //             counter += 50
-        // //         case TOUGH:
-        // //             counter += 10
-        // //     }
-        // // }
-        // // console.log(counter)
-        let name = 'Attacker ' + target + '_' + Math.floor(Math.random()*100)
+        // sort the body by TOUGH ... MOVE ... ELSE
+        body.sort((a, b) => {
+            if (a == b) return 0;
+            else if (a == TOUGH) return -1;
+            else if (b == TOUGH) return 1;
+            else if (a == MOVE) return -1
+            else if (b == MOVE) return 1
+        });
+        let name = `a_${Game.time}`
         let newCreep = this.spawnCreep(body, name, {memory: {
             role: 'attacker',
             target: target,
-            working: false, home: this.room.name
+            home: this.room.name,
+            working: false,
+            waiting: false,
+            id: id,
         } });
-        while (newCreep == ERR_NAME_EXISTS){
-            name = 'Attacker ' + target + '_' + Math.floor(Math.random()*100)
-            newCreep = this.spawnCreep(body, name, {memory: {
-                role: 'attacker',
-                target: target,
-                working: false,
-                home: this.room.name
-            } });
-        }
 
         // create creep with the created body
         return newCreep;
@@ -513,102 +470,65 @@ StructureSpawn.prototype.createHealer =
     * @arg {number} numberOfHealParts
     * @arg {string} target
     * @arg {string} home */
-    function(energy, numberOfHealParts, target, home) {
+    function(energy, target, numberOfHealParts, tough, id) {
         let body = [];
-        for (let i = 0; i < 25-numberOfHealParts; i++) {body.push(TOUGH)}
-        for (let i = 0; i < numberOfHealParts; i++) {body.push(HEAL);}
+        for (let i = 0; i < numberOfHealParts && body.length < 49; i++) {body.push(HEAL); body.push(MOVE);}
+        energy -= (BODYPART_COST[HEAL]+BODYPART_COST[MOVE])*numberOfHealParts;
 
-        energy -= 100*numberOfHealParts;
-        if (1 == 2) {  
-            let numberOfParts = Math.floor(energy / 100);
-            if (numberOfParts > Math.floor((50-numberOfHealParts)/2)) {
-                numberOfParts = Math.floor((50-numberOfHealParts)/2)
-            }
+        if (tough) {
+            let numberOfParts = Math.min(Math.floor(energy/(BODYPART_COST[MOVE]+BODYPART_COST[TOUGH])), Math.floor((25-numberOfHealParts)));
+            for (let i = 0; i < numberOfParts && body.length < 49; i++) {body.push(TOUGH); body.push(MOVE);}
         }
-        numberOfParts = 25
-        // for (let i = 0; i < numberOfParts; i++) {body.push(CARRY);}
-        for (let i = 0; i < numberOfParts; i++) {body.push(MOVE);}
-        let counter = 0
-        for (i of body) {
-            switch (i) {
-                case ATTACK:
-                    counter += 80; break;
-                case WORK:
-                    counter += 100; break;
-                case CARRY:
-                    counter += 50; break;
-                case MOVE:
-                    counter += 50; break;
-                case TOUGH:
-                    counter += 10; break;
-                case HEAL:
-                    counter += 250; break;
-            }
-        }
-        console.log(counter)
-        console.log(body)
-
-        if (body.length > 50) body = body.slice(0, 50);
-        let name = 'Healer ' + target + '_' + Math.floor(Math.random()*100)
+        // sort the body by TOUGH ... MOVE ... ELSE
+        body.sort((a, b) => {
+            if (a == b) return 0;
+            else if (a==TOUGH) return -1;
+            else if (b==TOUGH) return 1;
+            else if (a == MOVE) return -1
+            else if (b == MOVE) return 1
+        });
+        let name = `h_${Game.time}`
         let newCreep = this.spawnCreep(body, name, {memory: {
             role: 'healer',
             target: target,
-            home: home,
-            working: false
+            home: this.room.name,
+            working: false,
+            waiting: false,
+            id: id,
         } });
-        while (newCreep == ERR_NAME_EXISTS){
-            name = 'Healer ' + target + '_' + Math.floor(Math.random()*100)
-            newCreep = this.spawnCreep(body, name, {memory: {
-                role: 'healer',
-                target: target,
-                home: home,
-                working: false
-            } });
-        }
-
         // create creep with the created body
         return newCreep;
     };
 StructureSpawn.prototype.createDismantler =
     /** @arg {number} energy
     * @arg {number} numberOfWorkParts
-    * @arg {string} target
-    * @arg {string} home */
-    function(energy, numberOfWorkParts, target, home) {
+    * @arg {string} target */
+    function(energy, target, numberOfWorkParts, tough, id) {
         let body = [];
-        for (let i = 0; i < 10; i++) {body.push(TOUGH)}
-        for (let i = 0; i < numberOfWorkParts; i++) {body.push(WORK);}
+        for (let i = 0; i < numberOfWorkParts && body.length < 49; i++) {body.push(WORK); body.push(MOVE);}
+        energy -= (BODYPART_COST[MOVE]+BODYPART_COST[WORK])*numberOfWorkParts;
 
-        energy -= 100*numberOfWorkParts;
-        if (1 == 2) {  
-            let numberOfParts = Math.floor(energy / 100);
-            if (numberOfParts > Math.floor((50-numberOfWorkParts)/2)) {
-                numberOfParts = Math.floor((50-numberOfWorkParts)/2)
-            }
-        }
-        numberOfParts = 20
-        // for (let i = 0; i < numberOfParts; i++) {body.push(CARRY);}
-        for (let i = 0; i < numberOfParts; i++) {body.push(MOVE);}
-
-        if (body.length > 50) body = body.slice(0, 50)
-        
-        let name = 'Dismantler ' + target + '_' + Math.floor(Math.random()*100)
+        if (tough) {
+            let numberOfParts = Math.min(Math.floor(energy/(BODYPART_COST[MOVE]+BODYPART_COST[TOUGH])), Math.floor((25-numberOfWorkParts)));
+            for (let i = 0; i < numberOfParts && body.length < 49; i++) {body.push(TOUGH); body.push(MOVE);}
+        }  
+        // sort the body by TOUGH ... MOVE ... ELSE
+        body.sort((a, b) => {
+            if (a == b) return 0;
+            else if (a == TOUGH) return -1;
+            else if (b == TOUGH) return 1;
+            else if (a == MOVE) return -1
+            else if (b == MOVE) return 1
+        });
+        let name = `d_${Game.time}`
         let newCreep = this.spawnCreep(body, name, {memory: {
             role: 'dismantler',
             target: target,
-            home: home,
-            working: false
+            home: this.room.name,
+            working: false,
+            waiting: false,
+            id: id,
         } });
-        while (newCreep == ERR_NAME_EXISTS){
-            name = 'Dismantler ' + target + '_' + Math.floor(Math.random()*100)
-            newCreep = this.spawnCreep(body, name, {memory: {
-                role: 'dismantler',
-                target: target,
-                home: home,
-                working: false
-            } });
-        }
-
         // create creep with the created body
         return newCreep;
     };
@@ -616,15 +536,11 @@ StructureSpawn.prototype.createDismantler =
 StructureSpawn.prototype.createClaimerCreep =
     function(target, numberOfClaimParts, reserve=false) {
         let body = []
-        for (let i = 0; i < numberOfClaimParts/2; i++) body.push(MOVE);
+        for (let i = 0; i < numberOfClaimParts-1; i++) body.push(MOVE);
         for (let i = 0; i < numberOfClaimParts; i++) body.push(CLAIM);
-        for (let i = 0; i < numberOfClaimParts/2; i++) body.push(MOVE);
-        let name = 'claimer' + Math.floor(Math.random()*100)
+        body.push(MOVE);
+        let name = `c_${Game.time}`
         let newCreep = this.spawnCreep(body, name, {memory: { role: 'claimer', target: target, reserve: reserve, home: this.room.name } });
-        while (newCreep == ERR_NAME_EXISTS){
-            name = 'claimer' + Math.floor(Math.random()*100)
-            newCreep = this.spawnCreep(body, name, {memory: { role: 'claimer', target: target, reserve: reserve, home: this.room.name } });
-        }
 
         // create claimer creep with the created body, and target
         return newCreep;
@@ -632,47 +548,117 @@ StructureSpawn.prototype.createClaimerCreep =
 // create a new function for StructureSpawn
 StructureSpawn.prototype.createMinerCreep =
     function(sourceId) {
-        body = [WORK, WORK, WORK, WORK, WORK, MOVE]
+        let body = [WORK, WORK, WORK, WORK, WORK, MOVE]
 
-        let name = 'miner' + Math.floor(Math.random()*100)
+        let name = `m_${Game.time}`
         let newCreep = this.spawnCreep(body, name, {memory: { role: 'miner', sourceId: sourceId, home: this.room.name } });
-        while (newCreep == ERR_NAME_EXISTS){
-            name = 'miner' + Math.floor(Math.random()*100)
-            newCreep = this.spawnCreep(body, name, {memory: { role: 'miner', sourceId: sourceId, home: this.room.name } });
-        }
 
-        // create claimer creep with the created body, and target
+        // create miner creep with the created body, and target
         return newCreep;
-    };
-
-Structure.prototype.maxEnergy =
-    function() {
-        return this.room.energyCapacityAvailable
     };
 Structure.prototype.claimRoom =
     function(target, claimParts=1) {
-        if (target != undefined) {this.memory.claimRoom = [target, claimParts]; return [target, claimParts]}
-        else return 'target is needed'
+        if (target == undefined) return 'target is needed';
+        this.memory.claimRoom = [target, claimParts];
+        return [target, claimParts]
     };
 Structure.prototype.reserveRoom =
     function(target, claimParts=1) {
-        if (target != undefined) {this.memory.reserveRoom = [target, claimParts]; return [target, claimParts]}
-        else return 'target is needed'
+        if (target == undefined) return 'target is needed' 
+
+        this.memory.reserveRoom = [target, claimParts];
+        return [target, claimParts]
     };
 Structure.prototype.buildRoom =
     function(target, workParts=1) {
-        if (target != undefined) {this.memory.buildRoom = [target, workParts]; return [target, workParts]}
-        else return 'target is needed'
+        if (target == undefined) return 'target is needed';
+
+        this.memory.buildRoom = [target, workParts];
+        return [target, workParts];
+    };
+Structure.prototype.spawnAttacker =
+    function(target, numberOfAttackParts, tough, id=undefined) {
+        if (arguments.length < 3) return 'target, numberOfAttackParts and tough are needed';
+        this.memory.attackRoom = [target, numberOfAttackParts, tough, id];
+        return [target, numberOfAttackParts, tough, id];
+    };
+Structure.prototype.spawnDismantler =
+    function(target, numberOfWorkParts, tough, id=undefined) {
+        if (arguments.length < 3) return 'target, numberOfWorkParts and tough are needed';
+        this.memory.dismantleAttackRoom = [target, numberOfWorkParts, tough, id];
+        return [target, numberOfWorkParts, tough, id];
+    };
+Structure.prototype.spawnHealer =
+    function(target, numberOfHealParts, tough, id=undefined) {
+        if (arguments.length < 3) return 'target, numberOfHealParts and tough are needed';
+
+        this.memory.healTarget = [target, numberOfHealParts, tough, id];
+        return [target, numberOfHealParts, tough, id];
+    };
+Structure.prototype.spawnScout =
+    function(target) {
+        if (arguments.length == 0) return 'auto target is WIP';
+        this.memory.scoutRoom = target;
+        return target;
+    };
+Structure.prototype.attackRoom =
+    function(target, dismantlers, attackers, healers, tough, forceAttack=false) {
+        if (arguments.length < 5) return 'target, dismantlers, attackers, healers and tough are needed'
+        else if (attackers + dismantlers > 1) return 'WIP'
+        else if (!(Memory.rooms && Memory.rooms[this.room.name])) return 'wrong room memory, try again later'
+        else if (!_.isArray(Memory.rooms[this.room.name].attackRoom)) Memory.rooms[this.room.name].attackRoom = [];
+
+        Memory.rooms[this.room.name].attackRoom.push({target: target, dismantlers: dismantlers, attackers: attackers, healers: healers, tough: tough, id: Game.time, forceAttack: forceAttack});
+        return {target: target, dismantlers: dismantlers, attackers: attackers, healers: healers, tough: tough, id: Game.time, forceAttack: forceAttack}
+        
+    };
+StructureSpawn.prototype.processAttacks =
+    function() {
+        if (Memory.rooms && Memory.rooms[this.room.name] && _.isArray(Memory.rooms[this.room.name].attackRoom)) Memory.rooms[this.room.name].attackRoom.forEach((task) => {
+            // not a force attack and is not seeing the target room
+            if (!task.forceAttack && Game.rooms[task.target] == undefined) {
+                // once per 100 tick
+                if (Game.time % 100) {
+                    let numOfScouts = _.sum(Game.creeps, c => c.memory.role == 'scout' && c.memory.target == task.target)
+                    if (numOfScouts < 1) this.spawnScout(task.target);
+                }
+                // ALWAYS break proccess of curent task
+                return;
+            }
+            if (Game.rooms[task.target] != undefined && (!(Game.rooms[task.target].controller == undefined || Game.rooms[task.target].controller.safeMode == undefined  || Game.rooms[task.target].controller.safeMode <= 200))) return;
+            let numOfDismantlers = _.sum(Memory.creeps, (m) => (m.role == 'dismantler' || m.hardRole == 'dismantler') && m.id == task.id);
+            let numOfAttackers = _.sum(Memory.creeps, (m) => (m.role == 'attacker' || m.hardRole == 'attacker') && m.id == task.id);
+            let numOfHealers = _.sum(Memory.creeps, (m) => (m.role == 'healer' || m.hardRole == 'healer') && m.id == task.id);
+            let ready = -3;
+            if (numOfDismantlers < task.dismantlers) this.spawnDismantler(task.target, Math.floor(this.room.energyCapacityAvailable/200), task.tough, task.id);
+            else ready++;
+            if (numOfAttackers < task.attackers) this.spawnAttacker(task.target, Math.floor(this.room.energyCapacityAvailable/200)+1, task.tough, task.id);
+            else ready++;
+            if (numOfHealers < task.healers && (numOfAttackers > 0 || numOfDismantlers > 0)) this.spawnHealer(_.filter(Game.creeps, (c) => c.memory.id == task.id && (c.memory.role == 'attacker' || c.memory.role == 'dismantler' || c.memory.hardRole == 'attacker' || c.memory.hardRole == 'dismantler'))[0].name, Math.floor(this.room.energyCapacityAvailable/300)-1, task.tough, task.id);
+            else ready++;
+            let waiting = ready < 0;
+            for (let creepName in Game.creeps) {
+                if (Game.creeps[creepName].memory.id == task.id) Game.creeps[creepName].memory.waiting = waiting;
+            }
+        });
     };
 Structure.prototype.sellResource =
     function(resource, minPrice, maxDistance) {
-        if (arguments.length == 3) {
-            if (Memory.rooms && Memory.rooms[this.room.name] && Memory.rooms[this.room.name].terminal) {
-                Memory.rooms[this.room.name].terminal.autoSell.push(
-                    {enabled: true, resource: resource, minPrice: minPrice, maxDistance: maxDistance});
-                return `added ${JSON.stringify({enabled: true, resource: resource, minPrice: minPrice, maxDistance: maxDistance})} to auto sell of ${this.room.name}`
-            }
-            else return `there is no path "Memory.rooms['${this.room.name}'].terminal"`
-        }
-        else return 'resource, minPrice and maxDistance are needed'
+        if (arguments.length != 3) return 'resource, minPrice and maxDistance are needed'
+    
+        if (Memory.rooms && Memory.rooms[this.room.name] && Memory.rooms[this.room.name].terminal) return `there is no path "Memory.rooms['${this.room.name}'].terminal"`
+
+        Memory.rooms[this.room.name].terminal.autoSell.push({enabled: true, resource: resource, minPrice: minPrice, maxDistance: maxDistance});
+        return `added ${JSON.stringify({enabled: true, resource: resource, minPrice: minPrice, maxDistance: maxDistance})} to auto sell of ${this.room.name}`
     };
+
+// let creep = Game.getObjectById('#{id}');
+// let homeRoom = Game.rooms[creep.memory.home];
+// if (homeRoom != undefined) {
+//     let homeSpawn = homeRoom.find(FIND_MY_SPAWNS)[0];
+//     if (homeSpawn) {
+//         let creepHitsPercentage = creep.hits/creep.hitsMax*100;
+//         let numberOfHealParts = Math.max(Math.floor((100-creepHitsPercentage)/20), 1);
+//         console.log(homeSpawn.spawnHealer(creep.name, numberOfHealParts, false));
+//     }
+// }

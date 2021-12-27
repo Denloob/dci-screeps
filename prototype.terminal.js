@@ -1,4 +1,7 @@
 // made by Den_loob not for distribution
+
+const roleScout = require("./role.scout");
+
 // create a new function for StructureSpawn
 StructureTerminal.prototype.sendEnergy =
     function (dest, num = 100000) {
@@ -10,7 +13,7 @@ StructureTerminal.prototype.sendEnergy =
 StructureTerminal.prototype.addTask =
     /**
      * @param  {string} type type of task that you want to add, auto/to/from
-     * @param  {{enabled: boolean, resource: RESOURCE_*, id?: string, order?: boolean minPrice?: number, maxDistance?:number}} params   
+     * @param  {{enabled: boolean, resource: RESOURCE_*, id?: string, order?: boolean minPrice?: number, maxDistance?:number, toStructure?:string}} params   
      * @returns {string||object}
      */
     function (type, params, enableTerminal=true) {
@@ -33,8 +36,8 @@ StructureTerminal.prototype.addTask =
                     if (enableTerminal) terminalMemory.enabled = true;
                     return params;
                 case 'from':
-                    // if params keys are not ['enabled', 'dealData', 'order'], or they are not ['enabled', 'resource', 'order'] or they ['enabled', 'resource', 'order'] but order is false 
-                    if (!(_.isEqual(Object.keys(params).sort(), ['enabled', 'dealData', 'order'].sort()) || !_.isEqual(Object.keys(params).sort(), ['enabled', 'resource', 'order'].sort()) || params.order)) return 'error, wrong params';
+                    // if params keys are not ['enabled', 'dealData', 'order'], or they are not ['enabled', 'resource', 'order', 'toStructure'] or they ['enabled', 'resource', 'order', 'toStructure'] but order is false 
+                    if (!(_.isEqual(Object.keys(params).sort(), ['enabled', 'dealData', 'order', 'toStructure'].sort()) || !_.isEqual(Object.keys(params).sort(), ['enabled', 'resource', 'order', 'toStructure'].sort()) || params.order)) return 'error, wrong params';
                     else if(!(typeof params['enabled'] === 'boolean' && (typeof params['resource'] === 'string' || _.isObject(params['dealData'])) && typeof params['order'] === 'boolean')) return 'error wrong params type';
                     terminalMemory.from.push(params);
                     if (enableTerminal) terminalMemory.enabled = true;
@@ -54,12 +57,13 @@ StructureTerminal.prototype.addOrder =
       * @param  {number} totalAmount The amount of resources to be traded in total.
       * @param  {string} roomName The room where your order will be created. You must have your own Terminal structure in this room, otherwise the created order will be temporary inactive. This argument is not used when resourceType is one of account-bound resources (See INTERSHARD_RESOURCES constant).
       * @param  {bool} enableTerminal if to enable terminal memory
+      * @param  {string} toStructure one of STRUCTURE_* constants that represent the target creep will transfer the resource to
       * @returns {string||number} one of Game.market.createOrder returns or 'error, wrong terminal memory'
       */
-     function(type, resourceType, price, totalAmount, roomName, enableTerminal) {
+     function(type, resourceType, price, totalAmount, roomName, enableTerminal, toStructure) {
         if ((Memory.rooms && Memory.rooms[this.room.name] && Memory.rooms[this.room.name].terminal && _.isEqual(Object.keys(Memory.rooms[this.room.name].terminal), ['enabled', 'autoSell', 'from', 'to']))) {
             if(_.isObject(type)) {
-                var {type, resourceType, price, totalAmount, roomName, enableTerminal} = type;
+                var {type, resourceType, price, totalAmount, roomName, enableTerminal, toStructure} = type;
             }
             if (roomName == undefined) {
                 roomName = this.room.name;
@@ -70,7 +74,7 @@ StructureTerminal.prototype.addOrder =
                 if (type == ORDER_SELL)
                     this.addTask('to', {enabled: true, resource: resourceType, order: true}, enableTerminal);
                 else 
-                    this.addTask('from', {enabled: true, resource: resourceType, order: true}, enableTerminal);
+                    this.addTask('from', {enabled: true, resource: resourceType, order: true, toStructure: toStructure}, enableTerminal);
             }
             return order;
         }
@@ -98,57 +102,73 @@ StructureTerminal.prototype.addGlobalTask =
 StructureTerminal.prototype.processTasks =
     function () {
         // once per 10 ticks, if memory of room terminal in exist
-        if (Game.time%10 == 0 && Memory.rooms && Memory.rooms[this.room.name]) {
-            // if room memory is set properly
-            if (Memory.rooms[this.room.name].terminal && _.isEqual(Object.keys(Memory.rooms[this.room.name].terminal), ['enabled', 'autoSell', 'from', 'to'])) {
-                // get room terminal memory
-                let terminalMemory = Memory.rooms[this.room.name].terminal;
-                // if it is enabled
-                if (terminalMemory.enabled) {
-                    // for each auto sell task
-                    terminalMemory.autoSell.forEach((task, index) => {
-                        // if the task is set properly
-                        if (typeof task === 'object' && _.isEqual(Object.keys(task), ['enabled', 'resource', 'minPrice', 'maxDistance'])) {
-                            // if the task is enabled
-                            if (task.enabled) {
-                                // find best offer
-                                let dealData = this.getBestOffer(task.resource, task.minPrice, task.maxDistance);
-                                if (dealData) {
-                                    let sameResourceDeal = _.filter(terminalMemory.to, o => !o.order && _.isEqual(o.dealData != undefined ? o.dealData.resourceType : undefined, dealData.resourceType));   
-                                    sameResourceDeal.forEach(deal => {
-                                        terminalMemory.to.splice(terminalMemory.to.indexOf(deal), 1);
-                                    });
-                                    this.addTask('to', {enabled: true, dealData: dealData, order: false}, true);
-                                }
-                                let diedOrders = _.filter(terminalMemory.to, o => !o.order && (o.dealData == undefined || !o.dealData.active || Game.market.getOrderById(o.dealData.id) === null));
-                                diedOrders.forEach(order => {
-                                    let toMemory = Memory.rooms[this.room.name].terminal.to;
-                                    toMemory.splice(toMemory.indexOf(order), 1);
+        if (!(Game.time%10 == 0 && Memory.rooms && Memory.rooms[this.room.name])) return;
+        // if room memory is set properly
+        if (Memory.rooms[this.room.name].terminal && _.isEqual(Object.keys(Memory.rooms[this.room.name].terminal), ['enabled', 'autoSell', 'from', 'to'])) {
+            // get room terminal memory
+            let terminalMemory = Memory.rooms[this.room.name].terminal;
+            // if it is enabled
+            if (terminalMemory.enabled) {
+                // for each auto sell task
+                terminalMemory.autoSell.forEach((task, index) => {
+                    // if the task is set properly
+                    if (typeof task === 'object' && _.isEqual(Object.keys(task), ['enabled', 'resource', 'minPrice', 'maxDistance'])) {
+                        // if the task is enabled
+                        if (task.enabled) {
+                            // find best offer
+                            let dealData = this.getBestOffer(task.resource, task.minPrice, task.maxDistance);
+                            if (dealData) {
+                                let sameResourceDeal = _.filter(terminalMemory.to, o => !o.order && _.isEqual(o.dealData != undefined ? o.dealData.resourceType : undefined, dealData.resourceType));   
+                                sameResourceDeal.forEach(deal => {
+                                    terminalMemory.to.splice(terminalMemory.to.indexOf(deal), 1);
                                 });
+                                this.addTask('to', {enabled: true, dealData: dealData, order: false}, true);
                             }
                         }
-                        // if task isn't set properly, delete it
-                        else Memory.rooms[this.room.name].terminal.autoSell.splice(index, 1);
-                    });
-                    terminalMemory.to.forEach((task, index) => {
-                        if (task.enabled && task.order == false){
-                            let dealData = task.dealData;
-                            let tradeAmount = dealData.amount > this.store[dealData.resourceType] && this.store[dealData.resourceType] > 10000 ? this.store[dealData.resourceType]: dealData.amount;
-                            if (dealData.resourceType == RESOURCE_ENERGY) {
-                                let transactionCost = Game.market.calcTransactionCost(tradeAmount, this.room.name, dealData.roomName);
-                                tradeAmount = tradeAmount + transactionCost > this.store[dealData.resourceType]? tradeAmount - transactionCost: tradeAmount;
-                                transactionCost = Game.market.calcTransactionCost(tradeAmount, this.room.name, dealData.roomName);
-                            }
-                            tradeAmount = dealData.amount > 10000 ? Math.max(tradeAmount, 5000): dealData.amount
-                            this.deal(dealData.id, tradeAmount);
+                        let diedOrders = _.filter(terminalMemory.to, o => !o.order && (o.dealData == undefined || Game.market.getOrderById(o.dealData.id) === null));
+                        console.log(JSON.stringify(diedOrders))
+                        diedOrders.forEach(order => {
+                            let toMemory = Memory.rooms[this.room.name].terminal.to;
+                            toMemory.splice(toMemory.indexOf(order), 1);
+                        });
+                    }
+                    // if task isn't set properly, delete it
+                    else Memory.rooms[this.room.name].terminal.autoSell.splice(index, 1);
+                });
+                terminalMemory.to.forEach((task, index) => {
+                    // if task in enabled and added by autoSell
+                    if (task.enabled && task.order == false){
+                        let dealData = task.dealData;
+                        let tradeAmount = dealData.amount > this.store[dealData.resourceType] && this.store[dealData.resourceType] > 10000 ? this.store[dealData.resourceType]: dealData.amount;
+                        if (dealData.resourceType == RESOURCE_ENERGY) {
+                            let transactionCost = Game.market.calcTransactionCost(tradeAmount, this.room.name, dealData.roomName);
+                            tradeAmount = tradeAmount + transactionCost > this.store[dealData.resourceType]? tradeAmount - transactionCost: tradeAmount;
+                            transactionCost = Game.market.calcTransactionCost(tradeAmount, this.room.name, dealData.roomName);
                         }
-                    });
-                }
+                        tradeAmount = dealData.amount > 10000 ? Math.max(tradeAmount, 5000): dealData.amount
+                        this.deal(dealData.id, tradeAmount);
+                    }
+                });
+                // // terminalMemory.from.forEach((task, index) => {
+                // //     if (!task.enabled) return;
+                // //     // get the task resource
+                // //     let resource;
+                // //     if (task.order) resource = task.resource;
+                // //     else resource = task.dealData.resourceType;
+
+                // //     // get all the terminal menegers
+                // //     let TMs = _.filter(Game.creeps, c => c.memory.role == 'TM');
+                // //     // for each terminal meneger add the target to their memory
+                // //     TMs.forEach(tm => {
+                // //         if (!_.isArray(tm.memory.targets)) tm.memory.targets = [];
+                // //         tm.memory.targets.push({resource: resource, to: task.toStructure})
+                // //     });
+                // // });
             }
-            // else (if room memory is not set properly)
-            else {
-                Memory.rooms[this.room.name].terminal = {enabled: false, autoSell: [{enabled: false, resource: undefined, minPrice: 0, maxDistance: -1}], from: [{enabled: false, resource: undefined, order: false}], to: [{enabled: false, dealData: undefined, order: false}]};
-            }
+        }
+        // else (if room memory is not set properly)
+        else {
+            Memory.rooms[this.room.name].terminal = {enabled: false, autoSell: [{enabled: false, resource: undefined, minPrice: 0, maxDistance: -1}], from: [{enabled: false, resource: undefined, order: false, toStructure: undefined}], to: [{enabled: false, dealData: undefined, order: false}]};
         }
     };
 // create a new function for StructureSpawn

@@ -40,10 +40,8 @@ module.exports = {
         }
         // if not in the target room...
         else {
-            // find exit to the target room
-            var exit = creep.room.findExitTo(creep.memory.target);
-            // move to the exit
-            creep.moveTo(creep.pos.findClosestByPath(exit), {visualizePathStyle: {stroke: '#feeb75'}});
+            // travel to target room
+            creep.travelTo(new RoomPosition(25, 25, creep.memory.target), {roomCallback: global.roomCallback});
         }
     }
 };

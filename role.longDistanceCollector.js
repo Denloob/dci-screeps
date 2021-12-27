@@ -45,10 +45,8 @@ module.exports = {
             }
             // if not in home room...
             else {
-                // find exit to home room
-                var exit = creep.room.findExitTo(creep.memory.home);
-                // and move to exit
-                creep.moveTo(creep.pos.findClosestByPath(exit), {visualizePathStyle: {stroke: '#ffffff'}});
+                // travel to home room
+                creep.travelTo(new RoomPosition(25, 25, creep.memory.home), {roomCallback: global.roomCallback});
             }
         }
         // if creep is supposed to collect energy
@@ -59,10 +57,8 @@ module.exports = {
             }
             // if not in target room...
             else {
-                // find exit to target room
-                var exit = creep.room.findExitTo(creep.memory.target);
-                // move to exit
-                creep.moveTo(creep.pos.findClosestByPath(exit), {visualizePathStyle: {stroke: '#feeb75'}});
+                // travel to target room
+                creep.travelTo(new RoomPosition(25, 25, creep.memory.target), {roomCallback: global.roomCallback});
             }
         }
     }

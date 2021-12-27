@@ -2,7 +2,10 @@
 let roleCollector = require('role.collector')
 module.exports = {
     // a function to run the logic for this role
-    run: function(creep) {
+/**
+ * @param  {Creep} creep
+ */
+run: function(creep) {
         if (Memory.rooms && Memory.rooms[creep.room.name]) {
             // get the room terminal data
             let terminalData = Memory.rooms[creep.room.name].terminal;
@@ -48,17 +51,28 @@ module.exports = {
                         // find the storage
                         let storage = creep.room.storage;
                         // for each from order if we found the room storage
-                        if (storage != undefined) for (let order of terminalData.from) {
+                        for (let order of terminalData.from) {
+                            // get the stucture we transfer to
+                            let toStructure;
+                            if (order.toStructure != undefined) {
+                                // find closest toStructure
+                                //// toStructure = creep.pos.findClosestByPath(FIND_STRUCTURES, {filter: s => s.structureType == order.toStructure && (s.structureType != STRUCTURE_LAB || s.store[order.dealData || order.resource] > 0 || _.filter(Object.keys(s.store), k => k!='energy').length == 0)});
+                                toStructure = creep.pos.findClosestByPath(FIND_STRUCTURES, {filter: s => s.structureType == order.toStructure && ( s.structureType != STRUCTURE_LAB || s.mineralType == undefined || s.mineralType == (order.dealData || order.resource) )});
+                            }
+                            else if (storage != undefined) toStructure = storage;
+                            // if there is no good toStructure, continue to the next order
+                            else continue;
+
                             // if the order is enabled, order resource or dealData is defined and creep stores it
                             if (order.enabled && ((order.dealData != undefined && creep.store[order.dealData.resourceType] > 0 ) || (order.resource != undefined && creep.store[order.resource] > 0))) {
                                 // set the foundGoodOrder flag to true so we don't run collector code
                                 foundGoodOrder = true;
                                 // get the order resource
                                 let resource = order.dealData == undefined ? order.resource: order.dealData.resourceType
-                                // transfer the resource to storage, if not in range
-                                if (creep.transfer(storage, resource) == ERR_NOT_IN_RANGE) {
+                                // transfer the resource to toStructure, if not in range
+                                if (creep.transfer(toStructure, resource) == ERR_NOT_IN_RANGE) {
                                     // move towards it
-                                    creep.moveTo(storage, {visualizePathStyle: {stroke: '#007700'}});
+                                    creep.moveTo(toStructure, {visualizePathStyle: {stroke: '#007700'}});
                                 }
                                 // break out of the loop
                                 break;
@@ -71,7 +85,7 @@ module.exports = {
                         let terminal = creep.room.terminal;
                         // if we found the terminal for each 'from' order
                         if (terminal != undefined) for (let order of terminalData.from) {
-                            // if the order is enabled, order resource or dealData is defined and reminal stores it
+                            // if the order is enabled, order resource or dealData is defined and terminal stores it
                             if (order.enabled && ((order.dealData != undefined && terminal.store[order.dealData.resourceType] > 0) || (order.resource != undefined && terminal.store[order.resource] > 0))) {
                                 // set the foundGoodOrder flag to true so we don't run collector code
                                 foundGoodOrder = true;
@@ -97,10 +111,10 @@ module.exports = {
                         let terminal = creep.room.terminal;
                         // for each 'to' order
                         for (let order of terminalData.to) {
-                            // set the foundGoodOrder flag to true so we don't run collector code
-                            foundGoodOrder = true;
                             // if the order is enabled, order resource or dealData is defined and there is no storage or resource isn't energy or there are 20k energy in the storage
                             if (order.enabled && ((order.dealData != undefined && creep.store[order.dealData.resourceType] > 0 && (creep.room.storage == undefined || order.dealData.resourceType != RESOURCE_ENERGY || creep.room.storage.store[RESOURCE_ENERGY] > 20000)) || (order.resource != undefined && creep.store[order.resource] > 0 && (creep.room.storage == undefined || order.resource != RESOURCE_ENERGY || creep.room.storage.store[RESOURCE_ENERGY] > 20000)))) {
+                                // set the foundGoodOrder flag to true so we don't run collector code
+                                foundGoodOrder = true;
                                 // get the order resource
                                 let resource = order.dealData == undefined ? order.resource: order.dealData.resourceType;
 
@@ -122,10 +136,10 @@ module.exports = {
                         if (storage != undefined) {
                             // for each 'to' order
                             for (let order of terminalData.to) {
-                                // set the foundGoodOrder flag to true so we don't run collector code
-                                foundGoodOrder = true;
                                 // if the order is enabled and order resource is defined and it is in the storage
                                 if (order.enabled && ((order.dealData != undefined && storage.store[order.dealData.resourceType] > 0 && (creep.room.storage == undefined || order.dealData.resourceType != RESOURCE_ENERGY || creep.room.storage.store[RESOURCE_ENERGY] > 20000)) || (order.resource != undefined && storage.store[order.resource] > 0 &&(creep.room.storage == undefined || order.resource != RESOURCE_ENERGY || creep.room.storage.store[RESOURCE_ENERGY] > 20000)))) {
+                                    // set the foundGoodOrder flag to true so we don't run collector code
+                                    foundGoodOrder = true;
                                     // get the order resource
                                     let resource = order.dealData == undefined ? order.resource: order.dealData.resourceType;
                                     // withdraw order resource from the storage, if not in range

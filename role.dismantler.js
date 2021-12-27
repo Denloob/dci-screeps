@@ -3,73 +3,42 @@ module.exports = {
     run: function(creep) {
         // if in target room
         if (creep.room.name == creep.memory.target) {
-            if (creep.memory.path == undefined) {
-                // find closest enemy core or spawn
-                var hostileSpawn = creep.pos.findClosestByPath(FIND_HOSTILE_SPAWNS);
-                // if one is found
-                if (hostileSpawn != undefined) {
-                    // try to dismantle
-                    var dismantle = creep.dismantle(hostileSpawn)
-                    // if the hostile spawn is not in range
-                    if (dismantle == ERR_NOT_IN_RANGE) {
-                        // move towards it
-                        creep.moveTo(hostileSpawn, {visualizePathStyle: {stroke: '#ff0000'}});
-                    }
-                    // if dismantle successfully
-                    else if (hostileSpawn == OK) {
-                        console.log(creep + ' is dismantling ' + hostileSpawn + ' in ' + creep.room + ', hp left: ' + creep.hits)
-                    }
-                }
-                // if one is not found
-                else {
-                    // TODO usfull thing lmao :D p.s. removed dismantle invader core because it is meant to be attacked
-                }
+            // find closest enemy creep
+            let target = creep.pos.findClosestByPath(FIND_HOSTILE_STRUCTURES, {filter: (s) => s.structureType == STRUCTURE_TOWER &&
+                _.filter(creep.room.lookAt(s.pos), o => o.type == 'structure' && o.structure.structureType == STRUCTURE_RAMPART)[0] == undefined});
+            let maxRampartHits = 50000;
+            let itr = 10000;
+            if (target == undefined) for (let i = 0; i < maxRampartHits && target == undefined; i+=itr) {
+                target = creep.pos.findClosestByPath(FIND_HOSTILE_STRUCTURES, {filter: (s) => s.structureType == STRUCTURE_TOWER && (
+                    _.filter(creep.room.lookAt(s.pos), o => o.type == 'structure' && o.structure.structureType == STRUCTURE_RAMPART && o.structure.hits < i)[0])});
             }
-            else {
-                // let rampart = creep.pos.findClosestByPath(FIND_HOSTILE_STRUCTURES, {filter: (s) => s.structureType == STRUCTURE_RAMPART});
-                // var dismantle = creep.dismantle(rampart)
-                // // if the hostile spawn is not in range
-                // if (dismantle == ERR_NOT_IN_RANGE) {
-                //     // move towards it
-                //     creep.moveTo(rampart, {visualizePathStyle: {stroke: '#ff0000'}});
-                // }
-
-                // creep.moveTo(33, 22)
-
-                let tower = creep.pos.findClosestByPath(FIND_HOSTILE_STRUCTURES);
-                var dismantle = creep.dismantle(tower)
-                // if the hostile spawn is not in range
-                if (dismantle == ERR_NOT_IN_RANGE) {
-                    // move towards it
-                    creep.moveTo(tower, {visualizePathStyle: {stroke: '#ff0000'}});
+            if (target == undefined) {
+                target = creep.pos.findClosestByPath(FIND_HOSTILE_STRUCTURES, {filter: (s) => s.structureType == STRUCTURE_SPAWN &&
+                    _.filter(creep.room.lookAt(s.pos), o => o.type == 'structure' && o.structure.structureType == STRUCTURE_RAMPART)[0] == undefined});
+                let maxRampartHits = 100000;
+                let itr = 10000;
+                if (target == undefined) for (let i = 0; i < maxRampartHits && target == undefined; i+=itr) {
+                    target = creep.pos.findClosestByPath(FIND_HOSTILE_STRUCTURES, {filter: (s) => s.structureType == STRUCTURE_SPAWN && (
+                        _.filter(creep.room.lookAt(s.pos), o => o.type == 'structure' && o.structure.structureType == STRUCTURE_RAMPART && o.structure.hits < i)[0])});
                 }
-
-
-                // var hostileSpawn = creep.pos.findClosestByPath(FIND_HOSTILE_SPAWNS);
-                // // if one is found
-                // if (hostileSpawn != undefined) {
-                //     // try to dismantle
-                //     var dismantle = creep.dismantle(hostileSpawn)
-                //     // if the hostile spawn is not in range
-                //     if (dismantle == ERR_NOT_IN_RANGE) {
-                //         // move towards it
-                //         creep.moveTo(hostileSpawn, {visualizePathStyle: {stroke: '#ff0000'}});
-                //     }
-                //     // if dismantle successfully
-                //     else if (hostileSpawn == OK) {
-                //         console.log(creep + ' is dismantling ' + hostileSpawn + ' in ' + creep.room + ', hp left: ' + creep.hits)
-                //     }
-                // }
-
-                
+                if (target == undefined) target = creep.pos.findClosestByPath(FIND_HOSTILE_STRUCTURES, {filter: (s) => s.hits < 30000});
+            }
+            // if one is found
+            if (target != undefined) {
+                // try to attack
+                let dismantle = creep.dismantle(target)
+                // if the enemy is not in range
+                if (dismantle == ERR_NOT_IN_RANGE) {
+                    // move towards the enemy
+                    creep.moveTo(target, {visualizePathStyle: {stroke: '#ff0000'}});
+                }
+                else if (attack == OK) console.log(`${creep.name} is dismantling ${target} in ${creep.room}, hp left: ${creep.hits} while targets hits are ${target.hits}`)
             }
         }
-        // if not in target room...
-        else {
-            // find exit to target room
-            var exit = creep.room.findExitTo(creep.memory.target);
-            // and move to exit
-            creep.moveTo(creep.pos.findClosestByPath(exit), {visualizePathStyle: {stroke: '#ffffff'}});
+        // if not in target room and not waiting...
+        else if (!creep.memory.waiting) {
+            // travel to target room
+            creep.travelTo(new RoomPosition(25, 25, creep.memory.target));
         }
     }
 };

@@ -3,10 +3,8 @@ module.exports = {
     run: function(creep) {
         // if in target room
         if (creep.room.name != creep.memory.target) {
-            // find exit to target room
-            var exit = creep.room.findExitTo(creep.memory.target);
-            // move to exit
-            creep.moveTo(creep.pos.findClosestByPath(exit), {visualizePathStyle: {stroke: '#9933ff'}});
+            // travel to target room
+            creep.travelTo(new RoomPosition(25, 25, creep.memory.target), {roomCallback: global.roomCallback});
         }
         else {
             let roomController = creep.room.controller;

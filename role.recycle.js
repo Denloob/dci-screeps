@@ -2,16 +2,14 @@ module.exports = {
     // a function to run the logic for creep role
     run: function(creep) {
         let room = creep.room;
-        if (room.controller && room.controller.my && room.find(FIND_MY_SPAWNS).length) {
-            let spawn = creep.pos.findClosestByPath(FIND_MY_STRUCTURES, {filter: (s) => (s.structureType == STRUCTURE_SPAWN)});
+        let spawn = creep.pos.findClosestByPath(FIND_MY_SPAWNS);
+        if (room.controller && room.controller.my && spawn) {
             creep.moveTo(spawn, {reusePath: 10, visualizePathStyle: {stroke: '#000000'}});
             spawn.recycleCreep(creep);
         }
         else {
-            // find exit to home room
-            let exit = creep.room.findExitTo(creep.memory.home);
-            // move to exit
-            creep.moveTo(creep.pos.findClosestByPath(exit), {visualizePathStyle: {stroke: '#000000'}});
+            // move to home room
+            creep.travelTo(new RoomPosition(25, 25, creep.memory.home), {roomCallback: global.roomCallback});
         }
     }
 };

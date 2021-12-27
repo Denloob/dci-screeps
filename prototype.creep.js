@@ -12,15 +12,24 @@ var roles = {
     attacker: require('role.attacker'),
     healer: require('role.healer'),
     none: require('role.none'),
+    dec: require('role.dec'),
     MH: require('role.mineralHarvester'),
     LDC: require('role.longDistanceCollector'),
     recycle: require('role.recycle'),
     TM: require('role.terminalManager'),
+    scout: require('role.scout'),
+    boosting: require('role.none'),
 };
 
 Creep.prototype.runRole =
     function () {
         roles[this.memory.role].run(this);
+    };
+Creep.prototype.boost =
+    function (resource) {
+        if (!RESOURCES_ALL.includes(resource)) return `wrong resource ${resource}`;
+        if (!_.isArray(this.room.memory.boostCreeps)) return `boostCreeps array is ${boostCreeps} and not array, try again later`;
+        this.room.memory.boostCreeps.push([this.name, resource])
     };
 
 /** @function 
@@ -65,7 +74,7 @@ Creep.prototype.getEnergy =
             //// });
             // find closest storage
             let container = this.pos.findClosestByPath(FIND_STRUCTURES, {
-                filter: s => s.structureType == STRUCTURE_STORAGE && s.store[RESOURCE_ENERGY] > 10000
+                filter: s => s.structureType == STRUCTURE_STORAGE && s.store[RESOURCE_ENERGY] > 11000
             });
 
             // if no storage found      

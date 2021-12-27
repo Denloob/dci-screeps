@@ -5,13 +5,32 @@ require('prototype.creep');
 require('prototype.tower');
 require('prototype.spawn');
 require('prototype.terminal');
-let excuseMe = require('creep.excuseMe');
+require('prototype.RoomVisual')
+var Traveler = require('Traveler');
+var watcher = require('watch-client');
+var statsConsole = require("statsConsole");
+var MemHack = require('memHack');
+var getColorBasedOnPercentage = require('colors');
+//// let excuseMe = require('creep.excuseMe');
+//// let StatsManager = require('stats-manager');
+
+const profiler = require('cpu.profiler');
+profiler.enable();
+
 
 module.exports.loop = function() {
+    MemHack.pretick()
+    profiler.wrap(mainLoop);
+};
+
+function mainLoop() {
     if (Game.cpu.bucket == 10000) {
         Game.cpu.generatePixel();
     }
-    excuseMe.clearNudges();
+    global.Console = statsConsole;
+    global.roomCallback = roomCallback;
+    //// StatsManager.runForAllRooms();
+    //// excuseMe.clearNudges();
     // check for memory entries of died creeps by iterating over Memory.creeps
     for (let name in Memory.creeps) {
         // and checking if the creep is still alive
@@ -19,22 +38,20 @@ module.exports.loop = function() {
             // if not, delete the memory entry
             delete Memory.creeps[name];
         }
-        // if (Game.creeps[name].memory.role == 'longDistanceHarvester') {
-        //     Game.creeps[name].memory.role = 'LDH'
-        // }
     }
-
-
 
     // for each creeps
     for (let name in Game.creeps) {
-        for (let flagName in Game.flags) {
-            Game.flags[flagName].getState(Game.creeps[name])
+        let creep = Game.creeps[name]
+        let roomList = ['W22S33'];
+        if (roomList.includes(creep.room.name)) for (let flagName in Game.flags) {
+            let flag = Game.flags[flagName];
+            if (flag.color == COLOR_PURPLE && flag.secondaryColor == COLOR_PURPLE) flag.getState(creep)
         }
-        Game.creeps[name].giveWay()
-        if (Game.creeps[name].memory.role != undefined)
+        // // Game.creeps[name].giveWay()
+        if (creep.memory.role != undefined)
             // run creep logic
-            Game.creeps[name].runRole();
+            creep.runRole();
     }
 
     // find all towers
@@ -49,66 +66,100 @@ module.exports.loop = function() {
     for (let spawnName in Game.spawns) {
         // run spawn logic
         Game.spawns[spawnName].spawnCreepsIfNecessary();
+        Game.spawns[spawnName].processAttacks();
     }
     for (let roomName in Game.rooms) {
-        roomLogic(roomName);
-        if (Game.time % 10 == 0) {
-            let room = Game.rooms[roomName]
-            if (room.terminal && room.controller && room.controller.my) room.terminal.processTasks();
+        if (Memory.rooms && Memory.rooms[roomName] && Object.keys(Memory.rooms[roomName]).length == 0) {
+            delete Memory.rooms[roomName];
+            continue
         }
+        roomLogic(roomName);
+        if (Game.rooms[roomName] && Game.rooms[roomName].controller && Game.rooms[roomName].controller.my && Memory.rooms[roomName]) {
+            if (!_.isArray(Memory.rooms[roomName].boostCreeps)) Memory.rooms[roomName].boostCreeps = [];
+
+            [...Memory.rooms[roomName].boostCreeps].forEach(([creepName, resource], index) => {
+                if (!_.isString(creepName)) {statsConsole.log('err, for creepName, resource of boostCreeps: creepName is not a string'); return;}
+                if (!_.isString(resource)) {statsConsole.log('err, for creepName, resource of boostCreeps: resource is not a string'); return;}
+
+                /** @type {Creep} */
+                let creep = Game.creeps[creepName];
+                if (_.isUndefined(creep)) {Memory.rooms[roomName].boostCreeps.splice(index, 1); return;}
+
+                if (creep.memory.hardRole == undefined) creep.memory.hardRole = creep.memory.role; 
+                if (creep.memory.role != 'boosting') creep.memory.role = 'boosting';
+                if (!Object.keys(Game.structures).includes(creep.memory.labTarget)) creep.memory.labTarget = creep.pos.findClosestByPath(FIND_MY_STRUCTURES, {filter: {structureType: STRUCTURE_LAB, mineralType: resource}}).id;
+                /** @type {StructureLab} */
+                let labTarget = Game.getObjectById(creep.memory.labTarget);
+                let boostCreepReturn = labTarget.boostCreep(creep);
+                if (boostCreepReturn == ERR_NOT_IN_RANGE) {
+                    creep.moveTo(labTarget, {visualizePathStyle: {stroke: '#D72483'}});
+                }
+            });
+
+        }
+        let room = Game.rooms[roomName];
+        if (room.terminal && room.controller && room.controller.my) room.terminal.processTasks();
     }
 
     for (let flagName in Game.flags) {
         Game.flags[flagName].calcTask();
     }
-    
-
-    // console.log(Game.rooms.E9N23.terminal.sendEnergy('E8N23', 100000));
-    // Game.creeps['LDH E7N23_27'].moveTo(40, 7)
-    // var creepName = 'clai';
-    // var roomName = Game.creeps[creepName] != undefined ? Game.creeps[creepName].room: undefined;
-    // if (roomName != undefined) {
-    //     var spawnName = Game.creeps[creepName].room.name == 'E8N23'? 'Spawn1': 'Spawn2'
-    //     // var spawnName = 'Spawn1';
-    //     var spawnCords = spawnName == 'Spawn1' ? [17, 27] : [25, 25];
-    //     creep_ = Game.creeps[creepName]
-    //     if (creep_ != undefined) {
-    //         creep_.moveTo(spawnCords[0], spawnCords[1], {visualizePathStyle: {stroke: '#000000'}})
-    //         Game.spawns[spawnName].recycleCreep(Game.creeps[creepName])
-    //     }
+    try {TempCode()} catch (e) {Console.log(`${e} at TempCode`)}
+    // TempCode()
+    // statsConsole.log('     ')
+    // statsConsole.log('#1', 1)
+    // statsConsole.log('#2', 2)
+    // statsConsole.log('#3', 3)
+    // statsConsole.log('#4', 4)
+    // statsConsole.log('#5', 5)
+    // if (Game.time % 5 === 0) {
+        statsConsole.run(); // Run Stats collection
+        let opts = {
+            vBar: '║',
+            hBar: '═',
+            leftTopCorner: '╔',
+            rightTopCorner: '╗',
+            leftBottomCorner: '╚',
+            rightBottomCorner: '╝',
+        }
+        console.log('\n'.repeat(20))
+        console.log(statsConsole.displayHistogram());
+        console.log(statsConsole.displayStats(opts));
+        console.log(statsConsole.displayLogs(opts));
+        if (Memory.stats.logs.length > 300) Memory.stats.logs.shift();
+        //console.log(statsConsole.displayMaps()); // Don't use as it will consume ~30-40 CPU
+        // totalTime = (Game.cpu.getUsed() - totalTime);
+        // console.log("Time to Draw: " + totalTime.toFixed(2));
     // }
-    // Game.creeps['Healer Dismantler E7N24_13_41'].move(TOP)
-    // Game.creeps['Dismantler Dismantler E7N24_13_32'].move(TOP)
-    // Game.creeps['Dismantler Dismantler E7N24_13_10'].move(TOP)
-    // Game.creeps['Dismantler E7N24_13'].move(TOP)
-    // Game.creeps.builder49.moveTo(10, 0)
-    // Game.creeps.builder70.moveTo(10, 0)
+    watcher();
+}
 
-    // Game.spawns.Spawn1.createAttacker(4000, 15, 0, 0, 'E7N23', true)
-};
+function TempCode() {
+}
 
 function roomLogic(roomName) {
-    if (Game.rooms[roomName].controller != undefined && Game.rooms[roomName].controller.my) { 
-        let defaultHardMemory = {notifyOnDisplayReset: true, commentsOnDisplayReset: true, notifyOnTerminalDeal: true};
+    if (Game.rooms[roomName] && Game.rooms[roomName].controller != undefined && Game.rooms[roomName].controller.my) { 
+        let defaultHardMemory = {notifyOnDisplayReset: true, commentsOnDisplayReset: true, notifyOnTerminalDeal: true, importListOfRoles: false, listOfRoles: []};
+        let defaultdisplayData = {enabled: true, displayLDH: 'ROOM', fill: '121212', displayGraph: true, lastStorage: {energy: [[Game.time, Game.rooms[roomName].storage ? Game.rooms[roomName].storage.store.energy: 0]]}};
         if (typeof Memory.rooms !== 'object') Memory.rooms = {};
         if (typeof Memory.hardMemory !== 'object') Memory.hardMemory = {rooms: {}};
-        if (typeof Memory.rooms[roomName] !== 'object') Memory.rooms[roomName] = {whiteList: ['Den_loob'], displayData: {enabled: true, displayLDH: 'ROOM', fill: '121212', importListOfRoles: false, listOfRoles: []}};
-        if (typeof Memory.rooms[roomName].displayData !== 'object') Memory.rooms[roomName].displayData = {enabled: true, displayLDH: 'ROOM', fill: '121212', importListOfRoles: false, listOfRoles: []};
+        if (typeof Memory.rooms[roomName] !== 'object') Memory.rooms[roomName] = {whiteList: ['Den_loob'], displayData: defaultdisplayData, boostCreeps: []};
+        if (typeof Memory.rooms[roomName].displayData !== 'object') Memory.rooms[roomName].displayData = defaultdisplayData;
         if (typeof Memory.hardMemory.rooms[roomName] !== 'object') Memory.hardMemory.rooms[roomName] = defaultHardMemory;
         let roomMemory = Memory.rooms[roomName];
         let displayData = roomMemory.displayData;
         let hardMemory = Memory.hardMemory.rooms[roomName]
-        if (typeof displayData === 'object' && !_.isEqual(Object.keys(displayData), ['enabled', 'displayLDH', 'fill', 'importListOfRoles', 'listOfRoles']) ) {
+        if (typeof displayData === 'object' && !_.isEqual(Object.keys(displayData).sort(), Object.keys(defaultdisplayData).sort()) ) {
             if (Memory.hardMemory.rooms[roomName].notifyOnDisplayReset) {
-                console.log(`DISPLAY DATA RESET FOR ROOM ${roomMemory}!`);
-                if (commentsOnDisplayReset) {
-                console.log(`// you can disable this message by running >> Memory.hardMemory.rooms[${roomName}].notifyOnDisplayReset=false;\n// you also can disable this comments buy running >> Memory.hardMemory.rooms[${roomName}].commentsOnDisplayReset=false;`);
+                statsConsole.log(`DISPLAY DATA RESET FOR ROOM ${roomName}!`);
+                if (hardMemory.commentsOnDisplayReset) {
+                statsConsole.log(`// you can disable this message by running >> Memory.hardMemory.rooms[${roomName}].notifyOnDisplayReset=false;\n// you also can disable this comments buy running >> Memory.hardMemory.rooms[${roomName}].commentsOnDisplayReset=false;`);
                 }
             }
-            displayData = {enabled: true, displayLDH: 'ROOM', fill: '121212', importListOfRoles: false, listOfRoles: []};
+            displayData = defaultdisplayData;
         }
-        if (typeof hardMemory === 'object' && !_.isEqual(Object.keys(hardMemory), Object.keys(defaultHardMemory)) ) {
-            console.log(`\nERROR: hardMemory keys are wrong, you can set it to default by running >> Memory.hardMemory.rooms['${roomName}']=${JSON.stringify(defaultHardMemory)};\nor you can add keys to the hardMemory of the room ${roomName} manually,\nlist of all needed keys: [${_.difference(Object.keys(defaultHardMemory), Object.keys(hardMemory)).join(', ')}]`)
+        if (typeof hardMemory === 'object' && !_.isEqual(Object.keys(hardMemory).sort(), Object.keys(defaultHardMemory).sort()) ) {
+            statsConsole.log(`\nERROR: hardMemory keys are wrong, you can set it to default by running >> Memory.hardMemory.rooms['${roomName}']=${JSON.stringify(defaultHardMemory)};\nor you can add keys to the hardMemory of the room ${roomName} manually,\nlist of all needed keys: [${_.difference(Object.keys(defaultHardMemory), Object.keys(hardMemory)).join(', ')}]`)
         }
         if (typeof displayData === 'object') {
             if (displayData.fill != 'transparent' && !displayData.fill.startsWith('#')) displayData.fill = `#${displayData.fill}`;
@@ -119,3 +170,55 @@ function roomLogic(roomName) {
         }
     }
 };
+
+/**
+ * @param  {string} roomName
+ * @param  {Room.costMatrix} matrix
+ */
+function roomCallback (roomName, matrix) {
+    if (Memory.rooms && Memory.rooms[roomName] && Memory.rooms[roomName].avoid) return false;
+    else if (!Game.rooms[roomName]) return matrix;
+    let room = Game.rooms[roomName];
+    let hostiles = room.find(FIND_HOSTILE_CREEPS, { filter: (c) => _.some(c.body, b => b.type == ATTACK || b.type == RANGED_ATTACK) });
+    hostiles.forEach((h) => {
+        if (_.some(h.body, b => b.type == RANGED_ATTACK)) {
+            for (let x of _.range(-3, 4))
+                for (let y of _.range(-3, 4)) {
+                    matrix.set(h.pos.x + x, h.pos.y + y, 255);
+                    room.visual.circle(h.pos.x + x, h.pos.y + y, {fill: 'blue'})
+                }
+                
+            // for (let x of _.range(-4, 5))
+                // for (let y of _.range(-4, 5))
+                //     if (Math.abs(x) == 4 || Math.abs(y) == 4)
+                //         matrix.set(h.pos.x + x, h.pos.y + y, 200);
+        }
+        else {
+            /**
+            @ => hostile
+            + - | => matrix 255 border
+            = & ! => 200 border
+            &===&
+            !+-+!
+            !|@|!
+            !+-+!
+            &===&
+
+             */
+            for (let x of _.range(-1, 2)) {
+                for (let y of _.range(-1, 2)) {
+                    matrix.set(h.pos.x + x, h.pos.y + y, 255);
+                    room.visual.circle(h.pos.x + x, h.pos.y + y, {fill: 'blue'})
+                }
+            }
+
+            // for (let x of _.range(-2, 3)) {
+            //     for (let y of _.range(-2, 3))
+            //         if (Math.abs(x) == 2 || Math.abs(y) == 2)
+            //             matrix.set(h.pos.x + x, h.pos.y + y, 200);
+            // }
+        }
+    });
+    return matrix
+}
+// Game.rooms.W22S33.find(FIND_MY_STRUCTURES, {filter: {structureType: STRUCTURE_LAB}})[0].boostCreep(Game.creeps[''])

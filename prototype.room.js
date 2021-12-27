@@ -1,6 +1,9 @@
+const { grey } = require("colors");
+
 let lastRectSizesGlobal = {}
 Room.prototype.displayData =
     function () {
+        const gray = '#7b7b7b'
         if (lastRectSizesGlobal[this.name] == undefined) {
             lastRectSizesGlobal[this.name] = [20, 6, 20]
         }
@@ -43,9 +46,6 @@ Room.prototype.displayData =
                 });
             }
         }
-
-        let gray = '#7b7b7b'
-
         // User Data rect
         this.visual.rect(0, 0, 9, 9, {fill: fillRect, stroke: gray});
         this.visual.text('User Data', 1, 1.3, {color: 'white', font: 0.8, align: LEFT});
@@ -139,7 +139,7 @@ Room.prototype.displayData =
                             break;
                                 
                         default:
-                            console.log('ERROR: unexpected display LDH mode');
+                            Console.log('ERROR: unexpected display LDH mode');
                     }
                 }
                 else if (role.startsWith('@@')) {
@@ -165,7 +165,7 @@ Room.prototype.displayData =
                     numOfCreeps = _.sum(creepsInRoom, (c) => c.memory.role == role);
                 }
                 else {
-                    console.log('ERROR: Role type undefined');
+                    Console.log('ERROR: Role type undefined');
                 }
             } 
             let color = undefined;
@@ -183,11 +183,10 @@ Room.prototype.displayData =
         
         this.visual.text(`Not Limited Roles`, 1, endIndex+2, {color: 'white', font: 0.8, align: LEFT});
         endIndex += 3.5;
-        let oldEndIndex = endIndex;
         listOfNotLimitedRoles.forEach((role, indent) => {
             // TODO make so if creeps is ordered but is not ready, red text clr, else green
-            this.visual.text(`${role} ${_.sum(creepsInRoom, (c) => c.memory.role == role)}`, 1, oldEndIndex+indent, {color: '#B5B5B5', font: 0.8, align: LEFT});
-            endIndex = oldEndIndex + indent
+            this.visual.text(`${role} ${_.sum(creepsInRoom, (c) => c.memory.role == role)}`, 1, endIndex, {color: '#B5B5B5', font: 0.8, align: LEFT});
+            endIndex++;
         });
         endIndex++;
         lastRectSizes[0] = endIndex-10;
@@ -223,33 +222,84 @@ Room.prototype.displayData =
             this.visual.text('Storage: ', 41, endIndex, {color: 'white', font: 0.8, align: LEFT});
             let storagePersentage = Math.round( this.storage.store.getUsedCapacity()/this.storage.store.getCapacity()*100 *10)/10
             this.visual.text(`(${storagePersentage}%)`, 44.7, endIndex, {color: 'white', font: 0.8, align: LEFT});
-            endIndex++;
-            oldEndIndex = endIndex+0.5;
+            endIndex+=1.5;
             let storageResources = Object.keys(this.storage.store)
             storageResources.forEach((resource, indent) => {
                 let resourceNum = this.storage.store[resource]
                 if (resourceNum > 0) {
-                    resourceNum = resourceNum < 1000 ? resourceNum: Math.round(resourceNum/1000)+'k'
-                    this.visual.text(`${resource}`, 41.5, endIndex+indent/2, {color: 'white', font: 0.8, align: LEFT}); this.visual.text(`${resourceNum}`, 45, endIndex+indent/2, {color: 'white', font: 0.8, align: LEFT});
-                    endIndex = oldEndIndex + indent/2;
+                    resourceNumStr = resourceNum < 1000 ? resourceNum: Math.round(resourceNum/1000)+'k'
+                    this.visual.resource(resource, 41.5, endIndex+indent/2-0.3, 0.5);
+                    if (indent == 0) endIndex-=0.1;
+                    this.visual.text(`${resource}`, 42.2, endIndex+indent/2, {color: 'white', font: 0.8, align: LEFT});
+                        this.visual.text(`${resourceNumStr}`, 45, endIndex+indent/2, {color: 'white', font: 0.8, align: LEFT});
+                    endIndex+=0.7;
+                }
+
+                if (displayData.displayGraph) {
+                    let resourceArray = displayData.lastStorage[resource];
+                    if (!_.isArray(resourceArray) || resourceArray.length == 0) resourceArray = [[Game.time, resourceNum]]
+                    let lastResourceNumSaved = resourceArray[resourceArray.length-1][1];
+                    if (Math.abs(lastResourceNumSaved - resourceNum) > 2000) {
+                        resourceArray.push([Game.time, resourceNum]);
+                        if (resourceArray.length > 10) resourceArray.shift();
+                    }
+                    displayData.lastStorage[resource] = resourceArray
                 }
             });
-            endIndex += storageResources.length/2   
+            endIndex+=storageResources.length/2; 
             endIndex++;   
+
+            // Storage stats
+            if (displayData.displayGraph) {
+                for (let resourceName in displayData.lastStorage) {
+                    let resourceArray = displayData.lastStorage[resourceName];
+                    if (!_.isArray(resourceArray)) { resourceArray = [[Game.time, this.storage.store[resourceName]]]; displayData.lastStorage[resourceName] = resourceArray; }
+                    if (resourceArray.length < 2) continue;
+                    // define starting position
+                    let lastCords;
+                    
+                    // calculate tick per block
+                    let ticksPerBlock = [...resourceArray];
+                    // get the smallest two points by time if there is more then 2 points
+                    if (resourceArray.length > 2) ticksPerBlock = ticksPerBlock.sort((a,b) => a[0] - b[0]).slice(0, 2);
+                    //// ticksPerBlock = ticksPerBlock.sort((a, b) => a[0]-b[0]);
+                    ticksPerBlock = ticksPerBlock[1][0] - ticksPerBlock[0][0];
+                    // calculate min tick
+                    let minTick = [...resourceArray].sort((a,b) => a[0] - b[0])[0][0];
+                    // iterate over each resource record
+                    for (let [tick, num] of resourceArray) {
+                        currentCords = [(tick-minTick)/ticksPerBlock+1, 48-num/(1000)+7];
+                        lastCords = lastCords || currentCords;
+
+                        if (_.isEqual(lastCords, currentCords)) continue;
+                        // create visual line from last cord
+                        this.visual.line(lastCords[0], lastCords[1], currentCords[0], currentCords[1], {color: RESOURCE_COLORS[resourceName]});
+                        this.visual.resource(resourceName, currentCords[0], currentCords[1], 0.1);
+                        lastCords = currentCords;
+                    }
+                }
+                this.visual.line(1, 48, 1, 39, {color: gray, opacity: 0.9})
+                this.visual.line(1, 48, 22, 48, {color: gray, opacity: 0.9})
+                for (let i = 39; i <= 48; i+=0.6) this.visual.line(1, i, 22, i, {color: gray, opacity: 0.02});
+                for (let i = 1; i < 22; i+=0.6) this.visual.line(i, 48, i, 39, {color: gray, opacity: 0.02});
+                this.visual.line(22, 48, 22, 39, {color: gray, opacity: 0.02});
+            }
         }
         if (this.terminal != undefined) {
             this.visual.text('Terminal: ', 41, endIndex, {color: 'white', font: 0.8, align: LEFT});
             let terminalPersentage = Math.round( this.terminal.store.getUsedCapacity()/this.terminal.store.getCapacity()*100 *10)/10
             this.visual.text(`(${terminalPersentage}%)`, 44.7, endIndex, {color: 'white', font: 0.8, align: LEFT});
-            endIndex++;
-            oldEndIndex = endIndex+0.5;
+            endIndex+=1;
             let terminalResources = Object.keys(this.terminal.store)
             terminalResources.forEach((resource, indent) => {
                 let resourceNum = this.terminal.store[resource]
                 if (resourceNum > 0) {
                     resourceNum = resourceNum < 1000 ? resourceNum: Math.round(resourceNum/1000)+'k'
-                    this.visual.text(`${resource}`, 41.5, endIndex+indent/2, {color: '#DEDEDE', font: 0.8, align: LEFT}); this.visual.text(`${resourceNum}`, 45, endIndex+indent/2, {color: '#DEDEDE', font: 0.8, align: LEFT});
-                    endIndex = oldEndIndex + indent/2;
+                    this.visual.resource(resource, 41.5, endIndex+indent/2-0.3, 0.5);
+                    endIndex -= 0.1;
+                    this.visual.text(`${resource}`, 42.2, endIndex+indent/2, {color: '#DEDEDE', font: 0.8, align: LEFT});
+                    this.visual.text(`${resourceNum}`, 45, endIndex+indent/2, {color: '#DEDEDE', font: 0.8, align: LEFT});
+                    endIndex++;
                 }
             });
             endIndex += terminalResources.length/2
@@ -263,7 +313,7 @@ Room.prototype.displayData =
                         this.visual.text('autoSell: ', 41.2, endIndex, {color: 'gold', font: 0.8, align: LEFT}); endIndex++;
                         terminalMemory.autoSell.forEach(autoSell => {
                             if (autoSell.enabled) {
-                                this.visual.text(`${autoSell.resource}:`, 41.8, endIndex, {color: '#DEDEDE', font: 0.8, align: LEFT}); endIndex++;
+                                this.visual.resource(autoSell.resource, 41.8, endIndex, 0.5); endIndex++;
                                 this.visual.text(`MP: ${autoSell.minPrice}, MD: ${autoSell.maxDistance}`, 42.2, endIndex, {color: '#DEDEDE', font: 0.8, align: LEFT}); endIndex++; // minPrice, minDistance
                             }
                         });
@@ -272,8 +322,8 @@ Room.prototype.displayData =
                         this.visual.text('TO: ', 41.2, endIndex, {color: 'DeepSkyBlue', font: 0.8, align: LEFT}); endIndex++;
                         terminalMemory.to.forEach(to => {
                             if (to.enabled) {
-                                this.visual.text(`${to.dealData != undefined ? to.dealData.resourceType: to.resource}:`, 41.8, endIndex, {color: '#DEDEDE', font: 0.8, align: LEFT}); endIndex++;
-                                let moreInfo = to.order && to.resource != undefined ? `order: ${to.resource}`: `${to.dealData.roomName} ${to.dealData.price}$`
+                                this.visual.resource((to.dealData != undefined ? to.dealData.resourceType: to.resource), 41.8, endIndex, 0.5); endIndex++;
+                                let moreInfo = to.order && to.resource != undefined ? `order SELL: ${to.resource}`: `${to.dealData.roomName} ${to.dealData.price}$`
                                 this.visual.text(moreInfo, 42.2, endIndex, {color: '#DEDEDE', font: 0.8, align: LEFT}); endIndex++;
                             }
                         });
@@ -282,19 +332,15 @@ Room.prototype.displayData =
                         this.visual.text('FROM: ', 41.2, endIndex, {color: 'DeepPink', font: 0.8, align: LEFT}); endIndex++;
                         terminalMemory.from.forEach(from => {
                             if (from.enabled) {
-                                this.visual.text(`${from.dealData != undefined ? from.dealData.resourceType: from.resource}}:`, 41.8, endIndex, {color: '#DEDEDE', font: 0.8, align: LEFT}); endIndex++;
-                                let moreInfo = from.order && from.resource != undefined ? `order: ${from.resource}`: `${from.dealData.roomName} ${from.dealData.price}$`
+                                this.visual.resource((from.dealData != undefined ? from.dealData.resourceType: from.resource), 41.8, endIndex, 0.5); endIndex++;
+                                let moreInfo = from.order && from.resource != undefined ? `order BUY`: `${from.dealData.roomName} ${from.dealData.price}$`;
+                                moreInfo += from.toStructure != undefined ? ` to ${from.toStructure}`: ''
                                 this.visual.text(moreInfo, 42.2, endIndex, {color: '#DEDEDE', font: 0.8, align: LEFT}); endIndex++;
                             }
                         });
                     }  
-
+                    endIndex+=2;
                 }
-                // if the terminal is off
-                else {
-                    this.visual.text('off', 46.5, endIndex, {color: 'red', font: 0.8, align: LEFT}); // terminal brain parser
-                }
-                endIndex+=2;
             }
         }
         let energyInTheRoomCollor = this.energyAvailable == this.energyCapacityAvailable ? 'green' : this.energyAvailable >= this.energyCapacityAvailable/3 ? 'orange': 'red'
