@@ -23,6 +23,8 @@ module.exports.loop = function() {
     profiler.wrap(mainLoop);
 };
 
+// TODO creeps do not go to tombstones/resources/sources/etc while there is a attacker creep nearby
+
 function mainLoop() {
     if (Game.cpu.bucket == 10000) {
         Game.cpu.generatePixel();
@@ -42,10 +44,10 @@ function mainLoop() {
 
     // for each creeps
     for (let name in Game.creeps) {
-        let creep = Game.creeps[name]
-        let roomList = ['W22S33'];
+        const creep = Game.creeps[name]
+        const roomList = ['W22S33'];
         if (roomList.includes(creep.room.name)) for (let flagName in Game.flags) {
-            let flag = Game.flags[flagName];
+            const flag = Game.flags[flagName];
             if (flag.color == COLOR_PURPLE && flag.secondaryColor == COLOR_PURPLE) flag.getState(creep)
         }
         // // Game.creeps[name].giveWay()
@@ -55,7 +57,7 @@ function mainLoop() {
     }
 
     // find all towers
-    let towers = _.filter(Game.structures, s => s.structureType == STRUCTURE_TOWER);
+    const towers = _.filter(Game.structures, s => s.structureType == STRUCTURE_TOWER);
     // for each tower
     for (let tower of towers) {
         // run tower logic
@@ -63,18 +65,22 @@ function mainLoop() {
     }
 
     // for each spawn
-    for (let spawnName in Game.spawns) {
+    for (const spawnName in Game.spawns) {
         // run spawn logic
         Game.spawns[spawnName].spawnCreepsIfNecessary();
         Game.spawns[spawnName].processAttacks();
     }
-    for (let roomName in Game.rooms) {
-        if (Memory.rooms && Memory.rooms[roomName] && Object.keys(Memory.rooms[roomName]).length == 0) {
+    for (const roomName in Game.rooms) {
+        const room = Game.rooms[roomName];
+        // delte the room memory if it is empty
+        if (_.isObject(_.get(Memory, `rooms["${roomName}"]`)) && Object.keys(Memory.rooms[roomName]).length == 0) {
             delete Memory.rooms[roomName];
-            continue
+            continue;
         }
+        // run the room logic
         roomLogic(roomName);
-        if (Game.rooms[roomName] && Game.rooms[roomName].controller && Game.rooms[roomName].controller.my && Memory.rooms[roomName]) {
+        // if the room controler is owned by you and the room has valid memory
+        if (_.get(room, `controller.my`, false) && _.isObject(Memory.rooms[roomName])) {
             if (!_.isArray(Memory.rooms[roomName].boostCreeps)) Memory.rooms[roomName].boostCreeps = [];
 
             [...Memory.rooms[roomName].boostCreeps].forEach(([creepName, resource], index) => {
@@ -82,22 +88,21 @@ function mainLoop() {
                 if (!_.isString(resource)) {statsConsole.log('err, for creepName, resource of boostCreeps: resource is not a string'); return;}
 
                 /** @type {Creep} */
-                let creep = Game.creeps[creepName];
+                const creep = Game.creeps[creepName];
                 if (_.isUndefined(creep)) {Memory.rooms[roomName].boostCreeps.splice(index, 1); return;}
 
                 if (creep.memory.hardRole == undefined) creep.memory.hardRole = creep.memory.role; 
                 if (creep.memory.role != 'boosting') creep.memory.role = 'boosting';
                 if (!Object.keys(Game.structures).includes(creep.memory.labTarget)) creep.memory.labTarget = creep.pos.findClosestByPath(FIND_MY_STRUCTURES, {filter: {structureType: STRUCTURE_LAB, mineralType: resource}}).id;
                 /** @type {StructureLab} */
-                let labTarget = Game.getObjectById(creep.memory.labTarget);
-                let boostCreepReturn = labTarget.boostCreep(creep);
+                const labTarget = Game.getObjectById(creep.memory.labTarget);
+                const boostCreepReturn = labTarget.boostCreep(creep);
                 if (boostCreepReturn == ERR_NOT_IN_RANGE) {
                     creep.moveTo(labTarget, {visualizePathStyle: {stroke: '#D72483'}});
                 }
             });
 
         }
-        let room = Game.rooms[roomName];
         if (room.terminal && room.controller && room.controller.my) room.terminal.processTasks();
     }
 
@@ -139,16 +144,16 @@ function TempCode() {
 
 function roomLogic(roomName) {
     if (Game.rooms[roomName] && Game.rooms[roomName].controller != undefined && Game.rooms[roomName].controller.my) { 
-        let defaultHardMemory = {notifyOnDisplayReset: true, commentsOnDisplayReset: true, notifyOnTerminalDeal: true, importListOfRoles: false, listOfRoles: []};
-        let defaultdisplayData = {enabled: true, displayLDH: 'ROOM', fill: '121212', displayGraph: true, lastStorage: {energy: [[Game.time, Game.rooms[roomName].storage ? Game.rooms[roomName].storage.store.energy: 0]]}};
+        const defaultHardMemory = {notifyOnDisplayReset: true, commentsOnDisplayReset: true, notifyOnTerminalDeal: true, importListOfRoles: false, listOfRoles: []};
+        const defaultdisplayData = {enabled: true, displayLDH: 'ROOM', fill: '121212', displayGraph: true, lastStorage: {energy: [[Game.time, Game.rooms[roomName].storage ? Game.rooms[roomName].storage.store.energy: 0]]}};
         if (typeof Memory.rooms !== 'object') Memory.rooms = {};
         if (typeof Memory.hardMemory !== 'object') Memory.hardMemory = {rooms: {}};
         if (typeof Memory.rooms[roomName] !== 'object') Memory.rooms[roomName] = {whiteList: ['Den_loob'], displayData: defaultdisplayData, boostCreeps: []};
         if (typeof Memory.rooms[roomName].displayData !== 'object') Memory.rooms[roomName].displayData = defaultdisplayData;
         if (typeof Memory.hardMemory.rooms[roomName] !== 'object') Memory.hardMemory.rooms[roomName] = defaultHardMemory;
-        let roomMemory = Memory.rooms[roomName];
+        const roomMemory = Memory.rooms[roomName];
         let displayData = roomMemory.displayData;
-        let hardMemory = Memory.hardMemory.rooms[roomName]
+        const hardMemory = Memory.hardMemory.rooms[roomName]
         if (typeof displayData === 'object' && !_.isEqual(Object.keys(displayData).sort(), Object.keys(defaultdisplayData).sort()) ) {
             if (Memory.hardMemory.rooms[roomName].notifyOnDisplayReset) {
                 statsConsole.log(`DISPLAY DATA RESET FOR ROOM ${roomName}!`);
