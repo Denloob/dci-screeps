@@ -11,6 +11,7 @@ var watcher = require('watch-client');
 var statsConsole = require('statsConsole');
 var MemHack = require('memHack');
 var getColorBasedOnPercentage = require('colors');
+require('helper_cpuUsed');
 //// let excuseMe = require('creep.excuseMe');
 //// let StatsManager = require('stats-manager');
 
@@ -24,12 +25,34 @@ module.exports.loop = function () {
 
 // TODO creeps do not go to tombstones/resources/sources/etc while there is a attacker creep nearby
 
+global.Console = {
+  log: statsConsole.log,
+  clear: statsConsole.clear,
+  showCpu: HelperCpuUsed.show,
+  set: {
+    histogram(setTo) {
+      if (!Memory.console) Memory.console = {};
+      Memory.console.showHistogram = !!setTo;
+      return setTo;
+    },
+    stats(setTo) {
+      if (!Memory.console) Memory.console = {};
+      Memory.console.showStats = !!setTo;
+      return setTo;
+    },
+    logs(setTo) {
+      if (!Memory.console) Memory.console = {};
+      Memory.console.showLogs = !!setTo;
+      return setTo;
+    },
+  },
+};
+global.roomCallback = roomCallback;
 function mainLoop() {
   if (Game.cpu.bucket == 10000) {
     Game.cpu.generatePixel();
   }
-  global.Console = statsConsole;
-  global.roomCallback = roomCallback;
+  HelperCpuUsed.exec();
   //// StatsManager.runForAllRooms();
   //// excuseMe.clearNudges();
   // check for memory entries of died creeps by iterating over Memory.creeps
@@ -144,10 +167,10 @@ function mainLoop() {
     leftBottomCorner: '╚',
     rightBottomCorner: '╝',
   };
-  console.log('\n'.repeat(20));
-  console.log(statsConsole.displayHistogram());
-  console.log(statsConsole.displayStats(opts));
-  console.log(statsConsole.displayLogs(opts));
+  if (_.get(Memory, 'console.showHistogram') || _.get(Memory, 'console.showStats') || _.get(Memory, 'console.showLogs')) console.log('\n'.repeat(20));
+  if (_.get(Memory, 'console.showHistogram')) console.log(statsConsole.displayHistogram());
+  if (_.get(Memory, 'console.showStats')) console.log(statsConsole.displayStats(opts));
+  if (_.get(Memory, 'console.showLogs')) console.log(statsConsole.displayLogs(opts));
   if (Memory.stats.logs.length > 300) Memory.stats.logs.shift();
   //console.log(statsConsole.displayMaps()); // Don't use as it will consume ~30-40 CPU
   // totalTime = (Game.cpu.getUsed() - totalTime);
