@@ -46,16 +46,16 @@ module.exports = {
       if (target == undefined) target = creep.pos.findClosestByPath(FIND_HOSTILE_CREEPS);
       if (target == undefined) target = creep.pos.findClosestByPath(FIND_HOSTILE_STRUCTURES, { filter: (s) => s.structureType != STRUCTURE_CONTROLLER && s.hits < 30000 });
       if (target == undefined) target = creep.pos.findClosestByPath(FIND_HOSTILE_STRUCTURES, { filter: (s) => s.structureType != STRUCTURE_CONTROLLER });
-      if (target == undefined) target = creep.pos.findClosestByPath(FIND_STRUCTURES);
+      if (target == undefined)
+        target = creep.pos.findClosestByPath(FIND_STRUCTURES, { filter: (s) => s.structureType != STRUCTURE_CONTROLLER && s.structureType != STRUCTURE_WALL });
+      if (target == undefined) target = creep.pos.findClosestByPath(FIND_STRUCTURES, { filter: (s) => s.structureType != STRUCTURE_CONTROLLER });
       // if one is found
       if (target != undefined) {
         // try to attack
         let attack = creep.attack(target);
-        // if the enemy is not in range
-        if (attack == ERR_NOT_IN_RANGE) {
-          // move towards the enemy
-          creep.moveTo(target, { visualizePathStyle: { stroke: '#ff0000' } });
-        } else if (attack == OK) console.log(`${creep.name} is attacking ${target} in ${creep.room}, hp left: ${creep.hits} while targets hits are ${target.hits}`);
+        // move towards the enemy
+        creep.moveTo(target, { ignoreCreeps: true, visualizePathStyle: { stroke: '#ff0000' } });
+        if (attack == OK) console.log(`${creep.name} is attacking ${target} in ${creep.room}, hp left: ${creep.hits} while targets hits are ${target.hits}`);
       }
       if (creep.pos.y == 0) creep.move(BOTTOM);
       else if (creep.pos.y == 49) creep.move(TOP);
