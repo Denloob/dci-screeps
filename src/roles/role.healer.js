@@ -1,6 +1,9 @@
 module.exports = {
   // a function to run the logic for this role
   run: function (creep) {
+    if (creep.spawning) creep.memory.spawning = true;
+    else if (creep.memory.spawning != undefined) delete creep.memory.spawning;
+
     if (Game.creeps[creep.memory.target] != undefined) {
       let mainTarget = Game.creeps[creep.memory.target];
       if (creep.room.name == mainTarget.room.name) {

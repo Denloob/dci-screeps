@@ -629,13 +629,14 @@ StructureSpawn.prototype.processAttacks =
             let numOfDismantlers = _.sum(Memory.creeps, (m) => (m.role == 'dismantler' || m.hardRole == 'dismantler') && m.id == task.id);
             let numOfAttackers = _.sum(Memory.creeps, (m) => (m.role == 'attacker' || m.hardRole == 'attacker') && m.id == task.id);
             let numOfHealers = _.sum(Memory.creeps, (m) => (m.role == 'healer' || m.hardRole == 'healer') && m.id == task.id);
+			let numOfReadyHealers = _.sum(Memory.creeps, (m) => (m.role == 'healer' || m.hardRole == 'healer') && m.id == task.id && !m.spawning);
             let ready = -3;
             if (numOfDismantlers < task.dismantlers) this.spawnDismantler(task.target, Math.floor(this.room.energyCapacityAvailable/200), task.tough, task.id);
             else ready++;
             if (numOfAttackers < task.attackers) this.spawnAttacker(task.target, Math.floor(this.room.energyCapacityAvailable/200)+1, task.tough, task.id);
             else ready++;
             if (numOfHealers < task.healers && (numOfAttackers > 0 || numOfDismantlers > 0)) this.spawnHealer(_.filter(Game.creeps, (c) => c.memory.id == task.id && (c.memory.role == 'attacker' || c.memory.role == 'dismantler' || c.memory.hardRole == 'attacker' || c.memory.hardRole == 'dismantler'))[0].name, Math.floor(this.room.energyCapacityAvailable/300)-1, task.tough, task.id);
-            else ready++;
+            else if (numOfReadyHealers === task.healers) ready++;
             let waiting = ready < 0;
             for (let creepName in Game.creeps) {
                 if (Game.creeps[creepName].memory.id == task.id) Game.creeps[creepName].memory.waiting = waiting;
