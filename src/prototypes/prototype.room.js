@@ -369,7 +369,7 @@ Room.prototype.displayData = function () {
         // get the smallest two points by time if there is more then 2 points
         if (resourceArray.length > 2) resourcePerBlock = resourcePerBlock.sort((a, b) => a[0] - b[0]).slice(0, 2);
         //// ticksPerBlock = ticksPerBlock.sort((a, b) => a[0]-b[0]);
-        resourcePerBlock = resourcePerBlock[1][1] - resourcePerBlock[0][1];
+        resourcePerBlock = resourcePerBlock[0][1] - resourcePerBlock[1][1];
 
         //calculate resourceNum value
         let biggesResourceNum = [...resourceArray].sort((a, b) => a[0] - b[0])[0][1];
@@ -380,7 +380,7 @@ Room.prototype.displayData = function () {
         // iterate over each resource record
         let i = 0;
         for (let [tick, num] of resourceArray) {
-          currentCords = [(tick - minTick) / ticksPerBlock + 1, 48 - (num / resourcePerBlock + 1) + biggesResourceNum / resourcePerBlock];
+          currentCords = [(tick - minTick) / ticksPerBlock + 1, num / resourcePerBlock - 1 + 48 - biggesResourceNum / resourcePerBlock];
           lastCords = lastCords || currentCords;
           if (_.isEqual(lastCords, currentCords)) continue;
           // create visual line from last cord
