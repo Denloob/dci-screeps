@@ -1,4 +1,4 @@
-var roles = {
+const roles = {
   harvester: require('roles_role.harvester'),
   upgrader: require('roles_role.upgrader'),
   builder: require('roles_role.builder'),
@@ -20,8 +20,16 @@ var roles = {
   scout: require('roles_role.scout'),
   boosting: require('roles_role.none'),
 };
+const roleShortcut = {
+  r: 'recycle',
+  c: 'collector',
+  n: 'none',
+  u: 'upgrader',
+  b: 'builder',
+};
 Creep.prototype.runRole = function () {
-  roles[this.memory.role].run(this);
+  if (Object.keys(roleShortcut).includes(this.memory.role)) this.memory.role = roleShortcut[this.memory.role];
+  else roles[this.memory.role].run(this);
 };
 Creep.prototype.boost = function (resource) {
   if (!RESOURCES_ALL.includes(resource)) return `wrong resource ${resource}`;
@@ -102,7 +110,7 @@ Creep.prototype.getEnergy = function (useContainer, useSource, useOther) {
   if (useSource) {
     // find closest source
     let source = this.pos.findClosestByPath(FIND_SOURCES_ACTIVE);
-
+    if (source == undefined && this.store.energy > 100) this.memory.working = true;
     // try to harvest energy, if the source is not in range
     if (this.harvest(source) == ERR_NOT_IN_RANGE) {
       // move towards it
