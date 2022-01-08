@@ -380,7 +380,7 @@ Room.prototype.displayData = function () {
         // iterate over each resource record
         let i = 0;
         for (let [tick, num] of resourceArray) {
-          currentCords = [(tick - minTick) / ticksPerBlock + 1, num / resourcePerBlock - 1 + 48 - biggesResourceNum / resourcePerBlock];
+          currentCords = [(tick - minTick) / ticksPerBlock + 1, 48 - num / resourcePerBlock - 2 + biggesResourceNum / resourcePerBlock];
           lastCords = lastCords || currentCords;
           if (_.isEqual(lastCords, currentCords)) continue;
           // create visual line from last cord
