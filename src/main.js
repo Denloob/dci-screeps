@@ -67,12 +67,10 @@ function mainLoop() {
   // for each creeps
   for (let name in Game.creeps) {
     const creep = Game.creeps[name];
-    const roomList = ['W22S33'];
-    if (roomList.includes(creep.room.name))
-      for (let flagName in Game.flags) {
-        const flag = Game.flags[flagName];
-        if (flag.color == COLOR_PURPLE && flag.secondaryColor == COLOR_PURPLE) flag.getState(creep);
-      }
+    for (let flagName in Game.flags) {
+      const flag = Game.flags[flagName];
+      if (flag.color == COLOR_PURPLE && flag.secondaryColor == COLOR_PURPLE) flag.getState(creep);
+    }
     // // Game.creeps[name].giveWay()
     if (creep.memory.role != undefined)
       // run creep logic
