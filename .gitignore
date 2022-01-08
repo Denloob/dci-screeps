@@ -1,3 +1,4 @@
 Gruntfile.js
 dist
 node_modules
+python_calc/.venv
