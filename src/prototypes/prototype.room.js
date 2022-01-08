@@ -379,8 +379,12 @@ Room.prototype.displayData = function () {
 
         // iterate over each resource record
         for (let [tick, num] of resourceArray) {
+<<<<<<< HEAD
           // currentCords = [(tick - minTick) / ticksPerBlock + 1, 48 - num / resourcePerBlock - 2 + biggesResourceNum / resourcePerBlock];
           currentCords = [(tick - minTick) / ticksPerBlock + 1, num / resourcePerBlock + 48 - (smallestResourceNum / resourcePerBlock + 1)];
+=======
+          currentCords = [(tick - minTick) / ticksPerBlock + 1, 48 - num / resourcePerBlock - 2 + biggesResourceNum / resourcePerBlock];
+>>>>>>> aefe5359b3e65556bdd0a60d23c4032171e016cb
           lastCords = lastCords || currentCords;
           if (_.isEqual(lastCords, currentCords)) continue;
           // create visual line from last cord
