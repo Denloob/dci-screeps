@@ -337,8 +337,8 @@ Room.prototype.displayData = function () {
         let lastResourceNumSaved = resourceArray[resourceArray.length - 1][1];
         if (Math.abs(lastResourceNumSaved - resourceNum) > 2000) {
           resourceArray.push([Game.time, resourceNum]);
-          if (resourceArray.length > 50) resourceArray.shift();
         }
+        while (resourceArray.length > 10) resourceArray.shift();
         displayData.lastStorage[resource] = resourceArray;
       }
     });
@@ -366,28 +366,27 @@ Room.prototype.displayData = function () {
 
         // calculate resourceNum per block
         let resourcePerBlock = [...resourceArray];
-        // get the smallest two points by time if there is more then 2 points
-        if (resourceArray.length > 2) resourcePerBlock = resourcePerBlock.sort((a, b) => a[0] - b[0]).slice(0, 2);
+        // get the smallest two points by resource if there is more then 2 points
+        if (resourceArray.length > 2) resourcePerBlock = resourcePerBlock.sort((a, b) => b[1] - a[1]).slice(0, 2);
         //// ticksPerBlock = ticksPerBlock.sort((a, b) => a[0]-b[0]);
-        resourcePerBlock = resourcePerBlock[0][1] - resourcePerBlock[1][1];
+        resourcePerBlock = resourcePerBlock[1][1] - resourcePerBlock[0][1];
 
         //calculate resourceNum value
-        let biggesResourceNum = [...resourceArray].sort((a, b) => a[0] - b[0])[0][1];
+        let smallestResourceNum = [...resourceArray].sort((a, b) => a[0] - b[0])[0][1];
 
         // calculate min tick
         let minTick = [...resourceArray].sort((a, b) => a[0] - b[0])[0][0];
 
         // iterate over each resource record
-        let i = 0;
         for (let [tick, num] of resourceArray) {
-          currentCords = [(tick - minTick) / ticksPerBlock + 1, num / resourcePerBlock - 1 + 48 - biggesResourceNum / resourcePerBlock];
+          // currentCords = [(tick - minTick) / ticksPerBlock + 1, 48 - num / resourcePerBlock - 2 + biggesResourceNum / resourcePerBlock];
+          currentCords = [(tick - minTick) / ticksPerBlock + 1, num / resourcePerBlock + 48 - (smallestResourceNum / resourcePerBlock + 1)];
           lastCords = lastCords || currentCords;
           if (_.isEqual(lastCords, currentCords)) continue;
           // create visual line from last cord
           this.visual.line(lastCords[0], lastCords[1], currentCords[0], currentCords[1], { color: RESOURCE_COLORS[resourceName] });
           this.visual.resource(resourceName, currentCords[0], currentCords[1], 0.1);
           lastCords = currentCords;
-          i++;
         }
       }
       this.visual.line(1, 48, 1, 39, { color: gray, opacity: 0.9 });
