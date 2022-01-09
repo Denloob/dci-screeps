@@ -39,7 +39,8 @@ StructureSpawn.prototype.spawnCreepsIfNecessary = function () {
   /** @type {Object.<string, number>} */
   let numberOfCreeps = {};
   for (let role of listOfRoles) {
-    numberOfCreeps[role] = _.sum(creepsInRoom, (c) => c.memory.role == role);
+    numberOfCreeps[role] = _.sum(creepsInRoom, (c) => c.memory.role == role && c.ticksToLive > 70 && c.memory.backup !== true);
+    if (role === 'collector') numberOfCreeps[`backup_${role}`] = _.sum(creepsInRoom, (c) => c.memory.role == role && c.ticksToLive > 70 && c.memory.backup === true);
   }
 
   let maxEnergy = room.energyCapacityAvailable;
@@ -56,11 +57,11 @@ StructureSpawn.prototype.spawnCreepsIfNecessary = function () {
   // TODO MAKE TWO SPAWNS LOGIC
   // if no harvesters are left AND either no miners or no collectors are left
   //  create a backup creep
-  if (numberOfCreeps['harvester'] == 0 && numberOfCreeps['collector'] == 0) {
+  if (numberOfCreeps['harvester'] == 0 && numberOfCreeps['collector'] == 0 && numberOfCreeps['backup_collector'] == 0) {
     // if there are still miners or enough energy in Storage left
     if (numberOfCreeps['miner'] > 0 || (room.storage != undefined && room.storage.store[RESOURCE_ENERGY] >= 100 + 550)) {
       // create a collector
-      name = this.createNotWorkerCreep(room.energyAvailable, 'collector');
+      name = this.createNotWorkerCreep(room.energyAvailable, 'collector', 0, { backup: true });
       NewCreepRole = 'collector';
     }
     // if there is no miner and not enough energy in Storage left
