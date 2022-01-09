@@ -1,7 +1,9 @@
 // made by Den_loob not for distribution
-let roleCollector = require("roles_role.collector");
+let roleCollector = require('roles_role.collector');
 module.exports = {
-  // a function to run the logic for this role
+  /**
+   * @param  {Creep} creep
+   */
   /**
    * @param  {Creep} creep
    */
@@ -28,22 +30,15 @@ module.exports = {
         terminalData = Memory.rooms[creep.room.name].terminal;
       }
       if (creep.memory.hand == undefined) {
-        creep.memory.hand = "left";
+        creep.memory.hand = 'left';
       }
       // if creep is bringing resource to a terminal but has no resources left
-      if (
-        creep.memory.working == true &&
-        creep.store.getFreeCapacity() == creep.store.getCapacity()
-      ) {
+      if (creep.memory.working == true && creep.store.getFreeCapacity() == creep.store.getCapacity()) {
         // switch state
         creep.memory.working = false;
       }
       // if creep is collecting resources but is full and there is terminal in the room
-      else if (
-        creep.memory.working == false &&
-        creep.store.getFreeCapacity() == 0 &&
-        creep.room.terminal != undefined
-      ) {
+      else if (creep.memory.working == false && creep.store.getFreeCapacity() == 0 && creep.room.terminal != undefined) {
         // switch state
         creep.memory.working = true;
       }
@@ -52,7 +47,7 @@ module.exports = {
       if (creep.store.getFreeCapacity() == creep.store.getCapacity()) {
         // if it right hand is active, there is a storage and a good TO order
         if (
-          creep.memory.hand == "right" &&
+          creep.memory.hand == 'right' &&
           creep.room.storage != undefined &&
           _.some(
             terminalData.to,
@@ -60,33 +55,27 @@ module.exports = {
               order.enabled &&
               ((order.dealData != undefined &&
                 creep.room.storage.store[order.dealData.resourceType] > 0 &&
-                (creep.room.storage == undefined ||
-                  order.dealData.resourceType != RESOURCE_ENERGY ||
-                  creep.room.storage.store[RESOURCE_ENERGY] > 20000)) ||
+                (creep.room.storage == undefined || order.dealData.resourceType != RESOURCE_ENERGY || creep.room.storage.store[RESOURCE_ENERGY] > 20000)) ||
                 (order.resource != undefined &&
                   creep.room.storage.store[order.resource] > 0 &&
-                  (creep.room.storage == undefined ||
-                    order.resource != RESOURCE_ENERGY ||
-                    creep.room.storage.store[RESOURCE_ENERGY] > 20000)))
+                  (creep.room.storage == undefined || order.resource != RESOURCE_ENERGY || creep.room.storage.store[RESOURCE_ENERGY] > 20000)))
           )
         )
           // change the hand to left
-          creep.memory.hand = "left";
+          creep.memory.hand = 'left';
         // else if it left hand is active, there is a terminal and a good from order
         else if (
-          creep.memory.hand == "left" &&
+          creep.memory.hand == 'left' &&
           creep.room.terminal != undefined &&
           _.some(
             terminalData.from,
             (order) =>
               order.enabled &&
-              ((order.dealData != undefined &&
-                creep.room.terminal.store[order.dealData.resourceType] > 0) ||
-                (order.resource != undefined &&
-                  creep.room.terminal.store[order.resource] > 0))
+              ((order.dealData != undefined && creep.room.terminal.store[order.dealData.resourceType] > 0) ||
+                (order.resource != undefined && creep.room.terminal.store[order.resource] > 0))
           )
         )
-          creep.memory.hand = "right";
+          creep.memory.hand = 'right';
       }
 
       // define a flag to check if creep found a good order to work with
@@ -94,7 +83,7 @@ module.exports = {
       // if terminal trading is enabled
       if (terminalData.enabled) {
         // if right hand active so transferring FROM terminal to storage
-        if (creep.memory.hand == "right") {
+        if (creep.memory.hand == 'right') {
           // if full
           if (creep.memory.working) {
             // find the storage
@@ -108,10 +97,7 @@ module.exports = {
                 //// toStructure = creep.pos.findClosestByPath(FIND_STRUCTURES, {filter: s => s.structureType == order.toStructure && (s.structureType != STRUCTURE_LAB || s.store[order.dealData || order.resource] > 0 || _.filter(Object.keys(s.store), k => k!='energy').length == 0)});
                 toStructure = creep.pos.findClosestByPath(FIND_STRUCTURES, {
                   filter: (s) =>
-                    s.structureType == order.toStructure &&
-                    (s.structureType != STRUCTURE_LAB ||
-                      s.mineralType == undefined ||
-                      s.mineralType == (order.dealData || order.resource)),
+                    s.structureType == order.toStructure && (s.structureType != STRUCTURE_LAB || s.mineralType == undefined || s.mineralType == (order.dealData || order.resource)),
                 });
               } else if (storage != undefined) toStructure = storage;
               // if there is no good toStructure, continue to the next order
@@ -120,23 +106,17 @@ module.exports = {
               // if the order is enabled, order resource or dealData is defined and creep stores it
               if (
                 order.enabled &&
-                ((order.dealData != undefined &&
-                  creep.store[order.dealData.resourceType] > 0) ||
-                  (order.resource != undefined &&
-                    creep.store[order.resource] > 0))
+                ((order.dealData != undefined && creep.store[order.dealData.resourceType] > 0) || (order.resource != undefined && creep.store[order.resource] > 0))
               ) {
                 // set the foundGoodOrder flag to true so we don't run collector code
                 foundGoodOrder = true;
                 // get the order resource
-                let resource =
-                  order.dealData == undefined
-                    ? order.resource
-                    : order.dealData.resourceType;
+                let resource = order.dealData == undefined ? order.resource : order.dealData.resourceType;
                 // transfer the resource to toStructure, if not in range
                 if (creep.transfer(toStructure, resource) == ERR_NOT_IN_RANGE) {
                   // move towards it
                   creep.moveTo(toStructure, {
-                    visualizePathStyle: { stroke: "#007700" },
+                    visualizePathStyle: { stroke: '#007700' },
                   });
                 }
                 // break out of the loop
@@ -154,23 +134,17 @@ module.exports = {
                 // if the order is enabled, order resource or dealData is defined and terminal stores it
                 if (
                   order.enabled &&
-                  ((order.dealData != undefined &&
-                    terminal.store[order.dealData.resourceType] > 0) ||
-                    (order.resource != undefined &&
-                      terminal.store[order.resource] > 0))
+                  ((order.dealData != undefined && terminal.store[order.dealData.resourceType] > 0) || (order.resource != undefined && terminal.store[order.resource] > 0))
                 ) {
                   // set the foundGoodOrder flag to true so we don't run collector code
                   foundGoodOrder = true;
                   // get the order resource
-                  let resource =
-                    order.dealData == undefined
-                      ? order.resource
-                      : order.dealData.resourceType;
+                  let resource = order.dealData == undefined ? order.resource : order.dealData.resourceType;
                   // withdraw order resource from the terminal, if not in range
                   if (creep.withdraw(terminal, resource) == ERR_NOT_IN_RANGE) {
                     // move towards it
                     creep.moveTo(terminal, {
-                      visualizePathStyle: { stroke: "#00776D" },
+                      visualizePathStyle: { stroke: '#00776D' },
                     });
                   }
                   // break out of the loop
@@ -180,7 +154,7 @@ module.exports = {
           }
         }
         // else if left hand active so transferring from storage TO terminal
-        else if (creep.memory.hand == "left") {
+        else if (creep.memory.hand == 'left') {
           // if full
           if (creep.memory.working) {
             // find the terminal
@@ -192,28 +166,21 @@ module.exports = {
                 order.enabled &&
                 ((order.dealData != undefined &&
                   creep.store[order.dealData.resourceType] > 0 &&
-                  (creep.room.storage == undefined ||
-                    order.dealData.resourceType != RESOURCE_ENERGY ||
-                    creep.room.storage.store[RESOURCE_ENERGY] > 20000)) ||
+                  (creep.room.storage == undefined || order.dealData.resourceType != RESOURCE_ENERGY || creep.room.storage.store[RESOURCE_ENERGY] > 20000)) ||
                   (order.resource != undefined &&
                     creep.store[order.resource] > 0 &&
-                    (creep.room.storage == undefined ||
-                      order.resource != RESOURCE_ENERGY ||
-                      creep.room.storage.store[RESOURCE_ENERGY] > 20000)))
+                    (creep.room.storage == undefined || order.resource != RESOURCE_ENERGY || creep.room.storage.store[RESOURCE_ENERGY] > 20000)))
               ) {
                 // set the foundGoodOrder flag to true so we don't run collector code
                 foundGoodOrder = true;
                 // get the order resource
-                let resource =
-                  order.dealData == undefined
-                    ? order.resource
-                    : order.dealData.resourceType;
+                let resource = order.dealData == undefined ? order.resource : order.dealData.resourceType;
 
                 // transfer the resource to terminal
                 if (creep.transfer(terminal, resource) == ERR_NOT_IN_RANGE) {
                   // move towards it
                   creep.moveTo(terminal, {
-                    visualizePathStyle: { stroke: "#007700" },
+                    visualizePathStyle: { stroke: '#007700' },
                   });
                 }
                 // break out of the loop
@@ -234,27 +201,20 @@ module.exports = {
                   order.enabled &&
                   ((order.dealData != undefined &&
                     storage.store[order.dealData.resourceType] > 0 &&
-                    (creep.room.storage == undefined ||
-                      order.dealData.resourceType != RESOURCE_ENERGY ||
-                      creep.room.storage.store[RESOURCE_ENERGY] > 20000)) ||
+                    (creep.room.storage == undefined || order.dealData.resourceType != RESOURCE_ENERGY || creep.room.storage.store[RESOURCE_ENERGY] > 20000)) ||
                     (order.resource != undefined &&
                       storage.store[order.resource] > 0 &&
-                      (creep.room.storage == undefined ||
-                        order.resource != RESOURCE_ENERGY ||
-                        creep.room.storage.store[RESOURCE_ENERGY] > 20000)))
+                      (creep.room.storage == undefined || order.resource != RESOURCE_ENERGY || creep.room.storage.store[RESOURCE_ENERGY] > 20000)))
                 ) {
                   // set the foundGoodOrder flag to true so we don't run collector code
                   foundGoodOrder = true;
                   // get the order resource
-                  let resource =
-                    order.dealData == undefined
-                      ? order.resource
-                      : order.dealData.resourceType;
+                  let resource = order.dealData == undefined ? order.resource : order.dealData.resourceType;
                   // withdraw order resource from the storage, if not in range
                   if (creep.withdraw(storage, resource) == ERR_NOT_IN_RANGE) {
                     // move towards it
                     creep.moveTo(storage, {
-                      visualizePathStyle: { stroke: "#00776D" },
+                      visualizePathStyle: { stroke: '#00776D' },
                     });
                   }
                   // break out of the loop
@@ -263,7 +223,7 @@ module.exports = {
               }
             }
           }
-        } else console.log("non-existent hand");
+        } else console.log('non-existent hand');
       }
       if (!foundGoodOrder) roleCollector.run(creep);
     }

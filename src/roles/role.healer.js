@@ -1,5 +1,7 @@
 module.exports = {
-  // a function to run the logic for this role
+  /**
+   * @param  {Creep} creep
+   */
   run: function (creep) {
     if (creep.spawning) creep.memory.spawning = true;
     else if (creep.memory.spawning != undefined) delete creep.memory.spawning;

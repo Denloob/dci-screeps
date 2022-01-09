@@ -1,7 +1,9 @@
-var roleBuilder = require("roles_role.builder");
+var roleBuilder = require('roles_role.builder');
 
 module.exports = {
-  // a function to run the logic for this role
+  /**
+   * @param  {Creep} creep
+   */
   run: function (creep) {
     // if creep is trying to repair something but has no energy left
     if (creep.memory.working == true && creep.carry.energy == 0) {
@@ -9,10 +11,7 @@ module.exports = {
       creep.memory.working = false;
     }
     // if creep is harvesting energy but is full
-    else if (
-      creep.memory.working == false &&
-      creep.carry.energy == creep.carryCapacity
-    ) {
+    else if (creep.memory.working == false && creep.carry.energy == creep.carryCapacity) {
       // switch state
       creep.memory.working = true;
     }
@@ -26,10 +25,7 @@ module.exports = {
         // the second argument for findClosestByPath is an object which takes
         // a property called filter which can be a function
         // we use the arrow operator to define it
-        filter: (s) =>
-          s.hits < s.hitsMax &&
-          s.structureType != STRUCTURE_WALL &&
-          s.structureType != STRUCTURE_RAMPART,
+        filter: (s) => s.hits < s.hitsMax && s.structureType != STRUCTURE_WALL && s.structureType != STRUCTURE_RAMPART,
       });
 
       // if we find one
@@ -38,7 +34,7 @@ module.exports = {
         if (creep.repair(structure) == ERR_NOT_IN_RANGE) {
           // move towards it
           creep.moveTo(structure, {
-            visualizePathStyle: { stroke: "#ffffff" },
+            visualizePathStyle: { stroke: '#ffffff' },
           });
         }
       }
