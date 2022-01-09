@@ -331,69 +331,70 @@ Room.prototype.displayData = function () {
         endIndex += 0.7;
       }
 
-      if (displayData.displayGraph) {
-        let resourceArray = displayData.lastStorage[resource];
-        if (!_.isArray(resourceArray) || resourceArray.length == 0) resourceArray = [[Game.time, resourceNum]];
-        let lastResourceNumSaved = resourceArray[resourceArray.length - 1][1];
-        if (Math.abs(lastResourceNumSaved - resourceNum) > 2000) {
-          resourceArray.push([Game.time, resourceNum]);
-        }
-        while (resourceArray.length > 10) resourceArray.shift();
-        displayData.lastStorage[resource] = resourceArray;
-      }
+      // if (displayData.displayGraph) {
+      //   let resourceArray = displayData.lastStorage[resource];
+      //   if (!_.isArray(resourceArray) || resourceArray.length == 0) resourceArray = [[Game.time, resourceNum]];
+      //   let lastResourceNumSaved = resourceArray[resourceArray.length - 1][1];
+      //   if (Math.abs(lastResourceNumSaved - resourceNum) > 2000) {
+      //     resourceArray.push([Game.time, resourceNum]);
+      //   }
+      //   while (resourceArray.length > 10) resourceArray.shift();
+      //   displayData.lastStorage[resource] = resourceArray;
+      // }
     });
     endIndex += storageResources.length / 2;
     endIndex++;
 
     // Storage stats
-    if (displayData.displayGraph) {
-      for (let resourceName in displayData.lastStorage) {
-        let resourceArray = displayData.lastStorage[resourceName];
-        if (!_.isArray(resourceArray)) {
-          resourceArray = [[Game.time, this.storage.store[resourceName]]];
-          displayData.lastStorage[resourceName] = resourceArray;
-        }
-        if (resourceArray.length < 2) continue;
-        // define starting position
-        let lastCords;
+    // if (displayData.displayGraph) {
+    //   for (let resourceName in displayData.lastStorage) {
+    //     let resourceArray = displayData.lastStorage[resourceName];
+    //     if (!_.isArray(resourceArray)) {
+    //       resourceArray = [[Game.time, this.storage.store[resourceName]]];
+    //       displayData.lastStorage[resourceName] = resourceArray;
+    //     }
+    //     if (resourceArray.length < 2) continue;
+    //     // define starting position
+    //     let lastCords;
 
-        // calculate tick per block
-        let ticksPerBlock = [...resourceArray];
-        // get the smallest two points by time if there is more then 2 points
-        if (resourceArray.length > 2) ticksPerBlock = ticksPerBlock.sort((a, b) => a[0] - b[0]).slice(0, 2);
-        //// ticksPerBlock = ticksPerBlock.sort((a, b) => a[0]-b[0]);
-        ticksPerBlock = ticksPerBlock[1][0] - ticksPerBlock[0][0];
+    //     // calculate tick per block
+    //     let ticksPerBlock = [...resourceArray];
+    //     // get the smallest two points by time if there is more then 2 points
+    //     if (resourceArray.length > 2) ticksPerBlock = ticksPerBlock.sort((a, b) => a[0] - b[0]).slice(0, 2);
+    //     //// ticksPerBlock = ticksPerBlock.sort((a, b) => a[0]-b[0]);
+    //     ticksPerBlock = ticksPerBlock[1][0] - ticksPerBlock[0][0];
 
-        // calculate resourceNum per block
-        let resourcePerBlock = [...resourceArray];
-        // get the smallest two points by resource if there is more then 2 points
-        if (resourceArray.length > 2) resourcePerBlock = resourcePerBlock.sort((a, b) => b[1] - a[1]).slice(0, 2);
-        //// ticksPerBlock = ticksPerBlock.sort((a, b) => a[0]-b[0]);
-        resourcePerBlock = resourcePerBlock[1][1] - resourcePerBlock[0][1];
+    //     // calculate resourceNum per block
+    //     // get the smallest two points by resource
+    //     let resourcePerBlock = [...resourceArray].sort((a, b) => b[1] - a[1]).slice(0, 2);
+    //     //// ticksPerBlock = ticksPerBlock.sort((a, b) => a[0]-b[0]);
+    //     resourcePerBlock = resourcePerBlock[0][1] - resourcePerBlock[1][1];
 
-        //calculate resourceNum value
-        let smallestResourceNum = [...resourceArray].sort((a, b) => a[0] - b[0])[0][1];
+    //     //calculate resourceNum value
+    //     let smallestResourceNum = [...resourceArray].sort((a, b) => a[0] - b[0])[0][1];
 
-        // calculate min tick
-        let minTick = [...resourceArray].sort((a, b) => a[0] - b[0])[0][0];
-
-        // iterate over each resource record
-        for (let [tick, num] of resourceArray) {
-          currentCords = [(tick - minTick) / ticksPerBlock + 1, num / resourcePerBlock + 48 - (smallestResourceNum / resourcePerBlock + 1)];
-          lastCords = lastCords || currentCords;
-          if (_.isEqual(lastCords, currentCords)) continue;
-          // create visual line from last cord
-          this.visual.line(lastCords[0], lastCords[1], currentCords[0], currentCords[1], { color: RESOURCE_COLORS[resourceName] });
-          this.visual.resource(resourceName, currentCords[0], currentCords[1], 0.1);
-          lastCords = currentCords;
-        }
-      }
-      this.visual.line(1, 48, 1, 39, { color: gray, opacity: 0.9 });
-      this.visual.line(1, 48, 22, 48, { color: gray, opacity: 0.9 });
-      for (let i = 39; i <= 48; i += 0.6) this.visual.line(1, i, 22, i, { color: gray, opacity: 0.02 });
-      for (let i = 1; i < 22; i += 0.6) this.visual.line(i, 48, i, 39, { color: gray, opacity: 0.02 });
-      this.visual.line(22, 48, 22, 39, { color: gray, opacity: 0.02 });
-    }
+    //     // calculate min tick
+    //     let minTick = [...resourceArray].sort((a, b) => a[0] - b[0])[0][0];
+    //     // iterate over each resource record
+    //     for (let [tick, num] of resourceArray) {
+    //       currentCords = [
+    //         (tick - minTick) / ticksPerBlock + 1,
+    //         48 - (num / resourcePerBlock - smallestResourceNum / resourcePerBlock) - (48 - smallestResourceNum / resourcePerBlock), // TODO fix graphs
+    //       ];
+    //       lastCords = lastCords || currentCords;
+    //       if (_.isEqual(lastCords, currentCords)) continue;
+    //       // create visual line from last cord
+    //       this.visual.line(lastCords[0], lastCords[1], currentCords[0], currentCords[1], { color: RESOURCE_COLORS[resourceName] });
+    //       this.visual.resource(resourceName, currentCords[0], currentCords[1], 0.1);
+    //       lastCords = currentCords;
+    //     }
+    //   }
+    //   this.visual.line(1, 48, 1, 39, { color: gray, opacity: 0.9 });
+    //   this.visual.line(1, 48, 22, 48, { color: gray, opacity: 0.9 });
+    //   for (let i = 39; i <= 48; i += 0.6) this.visual.line(1, i, 22, i, { color: gray, opacity: 0.02 });
+    //   for (let i = 1; i < 22; i += 0.6) this.visual.line(i, 48, i, 39, { color: gray, opacity: 0.02 });
+    //   this.visual.line(22, 48, 22, 39, { color: gray, opacity: 0.02 });
+    // }
   }
   if (this.terminal != undefined) {
     this.visual.text('Terminal: ', 41, endIndex, {
