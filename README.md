@@ -1,8 +1,6 @@
-for updates.
-
 # THIS PROJECT IS DEPRECATED
 
-This repository is not maintained anymore. Stay tuned for updates on [GitHub](https://github.com/Denloob).
+This repository is not maintained anymore. Stay tuned for updates on my [GitHub](https://github.com/Denloob).
 
 ---
 
