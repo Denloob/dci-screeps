@@ -40,7 +40,7 @@ function getNudgeDirection_Random(pos) {
   // this should never happen, unless creep is spawned into a corner
   // or structure is built next to it and seals the only path out
   // getRandomDir
-  return (Math.floor(Math.random() * 8) + 1)();
+  return Math.floor(Math.random() * 8) + 1;
 }
 function getOppositeDir(dir) {
   return ((dir + 3) % 8) + 1;

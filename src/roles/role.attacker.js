@@ -47,10 +47,11 @@ module.exports = {
       }
       if (target == undefined) target = creep.pos.findClosestByPath(FIND_HOSTILE_CREEPS);
       if (target == undefined) target = creep.pos.findClosestByPath(FIND_HOSTILE_STRUCTURES, { filter: (s) => s.structureType != STRUCTURE_CONTROLLER && s.hits < 30000 });
+      if (target == undefined) target = creep.pos.findClosestByPath(FIND_HOSTILE_STRUCTURES, { filter: (s) => s.structureType != STRUCTURE_CONTROLLER && s.hits < 300000 });
       if (target == undefined) target = creep.pos.findClosestByPath(FIND_HOSTILE_STRUCTURES, { filter: (s) => s.structureType != STRUCTURE_CONTROLLER });
-      if (target == undefined)
-        target = creep.pos.findClosestByPath(FIND_STRUCTURES, { filter: (s) => s.structureType != STRUCTURE_CONTROLLER && s.structureType != STRUCTURE_WALL });
-      if (target == undefined) target = creep.pos.findClosestByPath(FIND_STRUCTURES, { filter: (s) => s.structureType != STRUCTURE_CONTROLLER });
+      // if (target == undefined)
+      //   target = creep.pos.findClosestByPath(FIND_STRUCTURES, { filter: (s) => s.structureType != STRUCTURE_CONTROLLER && s.structureType != STRUCTURE_WALL });
+      // if (target == undefined) target = creep.pos.findClosestByPath(FIND_STRUCTURES, { filter: (s) => s.structureType != STRUCTURE_CONTROLLER });
       // if one is found
       if (target != undefined) {
         // try to attack

@@ -220,7 +220,21 @@ StructureSpawn.prototype.spawnCreepsIfNecessary = function () {
       // if no order was found, check other roles
       else if (numberOfCreeps[role] < this.memory.minCreeps[role]) {
         if (role == 'collector') {
-          name = this.createNotWorkerCreep(maxEnergy, role);
+          const BCs = this.room.find(FIND_MY_CREEPS, (c) => c.memory.role == role && c.ticksToLive > 70 && c.memory.backup === true);
+          const posibleCarryParts = Math.min(Math.floor(this.room.energyCapacityAvailable / (BODYPART_COST[MOVE] + BODYPART_COST[CARRY])), Math.floor(50 / 2));
+          const goodBCsFilter = (bc) => _.filter(bc.body, (b) => b.type == CARRY).length > (posibleCarryParts * 2) / 3;
+          const goodBCs = _.filter(BCs, goodBCsFilter);
+          if (numberOfCreeps['backup_collector'] > 0 && !goodBCs.length) {
+            BCs.map((bc) =>
+              goodBCsFilter(bc)
+                ? (c.memory.role = 'recycle')
+                : {
+                    /** Do nothing */
+                  }
+            );
+          }
+          if (!BCs.length || !goodBCs.length) name = this.createNotWorkerCreep(maxEnergy, role);
+          else continue;
         } else if (role == 'MH') {
           let roomMineral = this.room.find(FIND_MINERALS)[0];
           let roomExtractor = this.room.find(FIND_STRUCTURES, { filter: (s) => s.structureType == STRUCTURE_EXTRACTOR })[0];
@@ -264,6 +278,7 @@ StructureSpawn.prototype.spawnCreepsIfNecessary = function () {
     // count the number of long distance harvesters globally
     for (let LDHData in this.memory.minLongDistanceHarvesters) {
       let [roomName, sourceIndex, workParts] = LDHData.split('_');
+      this.room.processLDH(roomName);
       numberOfLongDistanceHarvesters[LDHData] = _.sum(
         Game.creeps,
         (c) => c.memory.role == 'LDH' && c.memory.target == roomName && c.memory.sourceIndex == sourceIndex && c.memory.home == this.room.name
@@ -273,7 +288,6 @@ StructureSpawn.prototype.spawnCreepsIfNecessary = function () {
       }
     }
   }
-
   // if none of the above caused a spawn command check for LongDistanceCollectors
   /** @type {Object.<string, number>} */
   let numberOfLongDistanceCollectors = {};
@@ -610,45 +624,45 @@ StructureSpawn.prototype.createMinerCreep = function (sourceId) {
   // create miner creep with the created body, and target
   return newCreep;
 };
-Structure.prototype.claimRoom = function (target, claimParts = 1) {
+StructureSpawn.prototype.claimRoom = function (target, claimParts = 1) {
   if (target == undefined) return 'target is needed';
   this.memory.claimRoom = [target, claimParts];
   return [target, claimParts];
 };
-Structure.prototype.reserveRoom = function (target, claimParts = 1) {
+StructureSpawn.prototype.reserveRoom = function (target, claimParts = 1) {
   if (target == undefined) return 'target is needed';
 
   this.memory.reserveRoom = [target, claimParts];
   return [target, claimParts];
 };
-Structure.prototype.buildRoom = function (target, workParts = 1) {
+StructureSpawn.prototype.buildRoom = function (target, workParts = 1) {
   if (target == undefined) return 'target is needed';
 
   this.memory.buildRoom = [target, workParts];
   return [target, workParts];
 };
-Structure.prototype.spawnAttacker = function (target, numberOfAttackParts, tough, id = undefined) {
+StructureSpawn.prototype.spawnAttacker = function (target, numberOfAttackParts, tough, id = undefined) {
   if (arguments.length < 3) return 'target, numberOfAttackParts and tough are needed';
   this.memory.attackRoom = [target, numberOfAttackParts, tough, id];
   return [target, numberOfAttackParts, tough, id];
 };
-Structure.prototype.spawnDismantler = function (target, numberOfWorkParts, tough, id = undefined) {
+StructureSpawn.prototype.spawnDismantler = function (target, numberOfWorkParts, tough, id = undefined) {
   if (arguments.length < 3) return 'target, numberOfWorkParts and tough are needed';
   this.memory.dismantleAttackRoom = [target, numberOfWorkParts, tough, id];
   return [target, numberOfWorkParts, tough, id];
 };
-Structure.prototype.spawnHealer = function (target, numberOfHealParts, tough, id = undefined) {
+StructureSpawn.prototype.spawnHealer = function (target, numberOfHealParts, tough, id = undefined) {
   if (arguments.length < 3) return 'target, numberOfHealParts and tough are needed';
 
   this.memory.healTarget = [target, numberOfHealParts, tough, id];
   return [target, numberOfHealParts, tough, id];
 };
-Structure.prototype.spawnScout = function (target) {
+StructureSpawn.prototype.spawnScout = function (target) {
   if (arguments.length == 0) return 'auto target is WIP';
   this.memory.scoutRoom = target;
   return target;
 };
-Structure.prototype.attackRoom = function (target, dismantlers, attackers, healers, tough, forceAttack = false) {
+StructureSpawn.prototype.attackRoom = function (target, dismantlers, attackers, healers, tough, forceAttack = false) {
   if (arguments.length < 5) return 'target, dismantlers, attackers, healers and tough are needed';
   else if (attackers + dismantlers > 1) return 'WIP';
   else if (!(Memory.rooms && Memory.rooms[this.room.name])) return 'wrong room memory, try again later';
@@ -709,13 +723,45 @@ StructureSpawn.prototype.processAttacks = function () {
       }
     });
 };
-Structure.prototype.sellResource = function (resource, minPrice, maxDistance) {
+StructureSpawn.prototype.sellResource = function (resource, minPrice, maxDistance) {
   if (arguments.length != 3) return 'resource, minPrice and maxDistance are needed';
 
   if (Memory.rooms && Memory.rooms[this.room.name] && Memory.rooms[this.room.name].terminal) return `there is no path "Memory.rooms['${this.room.name}'].terminal"`;
 
   Memory.rooms[this.room.name].terminal.autoSell.push({ enabled: true, resource: resource, minPrice: minPrice, maxDistance: maxDistance });
   return `added ${JSON.stringify({ enabled: true, resource: resource, minPrice: minPrice, maxDistance: maxDistance })} to auto sell of ${this.room.name}`;
+};
+
+StructureSpawn.prototype.processLDM = function (roomName) {
+  const room = Game.rooms[roomName];
+  if (!room) {
+    if (!(Game.time % 100)) return;
+    let numOfScouts = _.sum(Memory.creeps, (m) => m.role == 'scout' && m.target == roomName);
+    if (numOfScouts < 1) this.spawnScout(roomName);
+    return;
+  }
+  if (this.memory.scoutRoom === roomName) delete this.memory.scoutRoom;
+
+  const sources = room.find(FIND_SOURCES);
+  for (const source of sources) {
+    const LDM = _.filter(Memory.creeps, (m) => m.role == 'LDM' && m.sourcePos == source.pos)[0];
+    if (LDM != undefined) return;
+    // TODO add LDM spawn
+  }
+};
+Room.prototype.processLDH = function (roomName) {
+  const room = Game.rooms[roomName];
+  if (!room) return;
+
+  let dangerousCreeps = room.find(FIND_HOSTILE_CREEPS, {
+    filter: (c) => _.some(c.body, (b) => b.type == ATTACK || b.type == RANGED_ATTACK || b.type == WORK || b.type == CLAIM),
+  });
+  let deffenders = _.sum(Memory.creeps, (m) => m.role === 'attacker' && m.target === roomName);
+  // spawn attacker if there is no deffenders, and dengerous creeps. does nothing if there is no spawns.
+  if (dangerousCreeps.length && deffenders < 1) {
+    const spawn = this.find(FIND_MY_SPAWNS)[0];
+    if (spawn) spawn.spawnAttacker(roomName, Math.floor(this.energyCapacityAvailable / 200) + 1, true);
+  }
 };
 
 // let creep = Game.getObjectById('#{id}');

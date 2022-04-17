@@ -48,7 +48,7 @@ function getNudgeDirection_Random(pos) {
 
 Flag.prototype.build =
     function (structureType, name) {
-        return this.room.createConstructionSite(this.pos, structureType, name);
+        return this.room ? this.room.createConstructionSite(this.pos, structureType, name): undefined;
     };
 Flag.prototype.calcTask =
     function () {

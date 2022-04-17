@@ -6,6 +6,7 @@ require('prototypes_prototype.tower');
 require('prototypes_prototype.spawn');
 require('prototypes_prototype.terminal');
 require('prototypes_prototype.RoomVisual');
+require('roomPlanner');
 var Traveler = require('Traveler');
 var watcher = require('watch-client');
 var statsConsole = require('statsConsole');
@@ -13,7 +14,7 @@ var MemHack = require('memHack');
 var getColorBasedOnPercentage = require('colors');
 require('helper_cpuUsed');
 //// let excuseMe = require('creep.excuseMe');
-//// let StatsManager = require('stats-manager');
+let StatsManager = require('stats-manager');
 
 const profiler = require('cpu.profiler');
 profiler.enable();
@@ -53,7 +54,7 @@ function mainLoop() {
     Game.cpu.generatePixel();
   }
   HelperCpuUsed.exec();
-  //// StatsManager.runForAllRooms();
+  StatsManager.runForAllRooms();
   //// excuseMe.clearNudges();
   // check for memory entries of died creeps by iterating over Memory.creeps
   for (let name in Memory.creeps) {
@@ -180,65 +181,68 @@ function mainLoop() {
 function TempCode() {}
 
 function roomLogic(roomName) {
-  if (Game.rooms[roomName] && Game.rooms[roomName].controller != undefined && Game.rooms[roomName].controller.my) {
-    const defaultHardMemory = {
-      notifyOnDisplayReset: true,
-      commentsOnDisplayReset: true,
-      notifyOnTerminalDeal: true,
-      importListOfRoles: false,
-      listOfRoles: [],
+  const room = Game.rooms[roomName];
+  if (!(room && room.controller != undefined && room.controller.my)) return;
+
+  const defaultHardMemory = {
+    notifyOnDisplayReset: true,
+    commentsOnDisplayReset: true,
+    notifyOnTerminalDeal: true,
+    importListOfRoles: false,
+    listOfRoles: [],
+  };
+  const defaultdisplayData = {
+    enabled: true,
+    displayLDH: 'ROOM',
+    fill: '121212',
+    displayGraph: true,
+    lastStorage: {
+      energy: [[Game.time, room.storage ? room.storage.store.energy : 0]],
+    },
+  };
+  if (typeof Memory.rooms !== 'object') Memory.rooms = {};
+  if (typeof Memory.hardMemory !== 'object') Memory.hardMemory = { rooms: {} };
+  if (typeof Memory.rooms[roomName] !== 'object')
+    Memory.rooms[roomName] = {
+      whiteList: ['Den_loob'],
+      displayData: defaultdisplayData,
+      boostCreeps: [],
     };
-    const defaultdisplayData = {
-      enabled: true,
-      displayLDH: 'ROOM',
-      fill: '121212',
-      displayGraph: true,
-      lastStorage: {
-        energy: [[Game.time, Game.rooms[roomName].storage ? Game.rooms[roomName].storage.store.energy : 0]],
-      },
-    };
-    if (typeof Memory.rooms !== 'object') Memory.rooms = {};
-    if (typeof Memory.hardMemory !== 'object') Memory.hardMemory = { rooms: {} };
-    if (typeof Memory.rooms[roomName] !== 'object')
-      Memory.rooms[roomName] = {
-        whiteList: ['Den_loob'],
-        displayData: defaultdisplayData,
-        boostCreeps: [],
-      };
-    if (typeof Memory.rooms[roomName].displayData !== 'object') Memory.rooms[roomName].displayData = defaultdisplayData;
-    if (typeof Memory.hardMemory.rooms[roomName] !== 'object') Memory.hardMemory.rooms[roomName] = defaultHardMemory;
-    const roomMemory = Memory.rooms[roomName];
-    let displayData = roomMemory.displayData;
-    const hardMemory = Memory.hardMemory.rooms[roomName];
-    if (typeof displayData === 'object' && !_.isEqual(Object.keys(displayData).sort(), Object.keys(defaultdisplayData).sort())) {
-      if (Memory.hardMemory.rooms[roomName].notifyOnDisplayReset) {
-        statsConsole.log(`DISPLAY DATA RESET FOR ROOM ${roomName}!`);
-        if (hardMemory.commentsOnDisplayReset) {
-          statsConsole.log(
-            `// you can disable this message by running >> Memory.hardMemory.rooms[${roomName}].notifyOnDisplayReset=false;\n// you also can disable this comments buy running >> Memory.hardMemory.rooms[${roomName}].commentsOnDisplayReset=false;`
-          );
-        }
+  if (typeof Memory.rooms[roomName].displayData !== 'object') Memory.rooms[roomName].displayData = defaultdisplayData;
+  if (typeof Memory.hardMemory.rooms[roomName] !== 'object') Memory.hardMemory.rooms[roomName] = defaultHardMemory;
+  const roomMemory = Memory.rooms[roomName];
+  let displayData = roomMemory.displayData;
+  const hardMemory = Memory.hardMemory.rooms[roomName];
+  if (typeof displayData === 'object' && !_.isEqual(Object.keys(displayData).sort(), Object.keys(defaultdisplayData).sort())) {
+    if (Memory.hardMemory.rooms[roomName].notifyOnDisplayReset) {
+      statsConsole.log(`DISPLAY DATA RESET FOR ROOM ${roomName}!`);
+      if (hardMemory.commentsOnDisplayReset) {
+        statsConsole.log(
+          `// you can disable this message by running >> Memory.hardMemory.rooms[${roomName}].notifyOnDisplayReset=false;\n// you also can disable this comments buy running >> Memory.hardMemory.rooms[${roomName}].commentsOnDisplayReset=false;`
+        );
       }
-      displayData = defaultdisplayData;
     }
-    if (typeof hardMemory === 'object' && !_.isEqual(Object.keys(hardMemory).sort(), Object.keys(defaultHardMemory).sort())) {
-      statsConsole.log(
-        `\nERROR: hardMemory keys are wrong, you can set it to default by running >> Memory.hardMemory.rooms['${roomName}']=${JSON.stringify(
-          defaultHardMemory
-        )};\nor you can add keys to the hardMemory of the room ${roomName} manually,\nlist of all needed keys: [${_.difference(
-          Object.keys(defaultHardMemory),
-          Object.keys(hardMemory)
-        ).join(', ')}]`
-      );
-    }
-    if (typeof displayData === 'object') {
-      if (displayData.fill != 'transparent' && !displayData.fill.startsWith('#')) displayData.fill = `#${displayData.fill}`;
-
-      if (displayData.enabled) Game.rooms[roomName].displayData();
-
-      if (!_.isEqual(roomMemory.displayData, displayData)) roomMemory.displayData = displayData;
-    }
+    displayData = defaultdisplayData;
   }
+  if (typeof hardMemory === 'object' && !_.isEqual(Object.keys(hardMemory).sort(), Object.keys(defaultHardMemory).sort())) {
+    statsConsole.log(
+      `\nERROR: hardMemory keys are wrong, you can set it to default by running >> Memory.hardMemory.rooms['${roomName}']=${JSON.stringify(
+        defaultHardMemory
+      )};\nor you can add keys to the hardMemory of the room ${roomName} manually,\nlist of all needed keys: [${_.difference(
+        Object.keys(defaultHardMemory),
+        Object.keys(hardMemory)
+      ).join(', ')}]`
+    );
+  }
+  if (typeof displayData === 'object') {
+    if (displayData.fill != 'transparent' && !displayData.fill.startsWith('#')) displayData.fill = `#${displayData.fill}`;
+
+    if (displayData.enabled) room.displayData();
+
+    if (!_.isEqual(roomMemory.displayData, displayData)) roomMemory.displayData = displayData;
+  }
+
+  if (roomName == 'W33N31') room.displayPlan(room.controller.level, room.find(FIND_MY_SPAWNS)[0].pos); // TODO calc if room is a planned room and auto build it
 }
 
 /**
@@ -256,7 +260,7 @@ function roomCallback(roomName, matrix) {
     if (_.some(h.body, (b) => b.type == RANGED_ATTACK)) {
       for (let x of _.range(-3, 4))
         for (let y of _.range(-3, 4)) {
-          matrix.set(h.pos.x + x, h.pos.y + y, 255);
+          matrix.set(h.pos.x + x, h.pos.y + y, 254);
           room.visual.circle(h.pos.x + x, h.pos.y + y, { fill: 'blue' });
         }
 
@@ -267,7 +271,7 @@ function roomCallback(roomName, matrix) {
     } else {
       /**
             @ => hostile
-            + - | => matrix 255 border
+            + - | => matrix 254 border
             = & ! => 200 border
             &===&
             !+-+!
@@ -278,7 +282,7 @@ function roomCallback(roomName, matrix) {
              */
       for (let x of _.range(-1, 2)) {
         for (let y of _.range(-1, 2)) {
-          matrix.set(h.pos.x + x, h.pos.y + y, 255);
+          matrix.set(h.pos.x + x, h.pos.y + y, 254);
           room.visual.circle(h.pos.x + x, h.pos.y + y, { fill: 'blue' });
         }
       }
